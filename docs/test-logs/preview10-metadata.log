@@ -1,0 +1,10 @@
+Obtaining file:///C:/Users/PCLTC/Downloads/thirtytutors-baseline-audit
+ERROR: Could not install packages due to an OSError: [Errno 13] Permission denied: 'C:\\Users\\PCLTC\\AppData\\Local\\Temp\\pip-build-tracker-iol1aocg\\749605d3645cadb3fa16c9b5aa35de464ec9c7fc9030f6c99300dc9c'
+Check the permissions.
+
+WARNING: Failed to remove contents in a temporary directory 'C:\Users\PCLTC\AppData\Local\Temp\pip-build-tracker-iol1aocg'.
+You can safely remove it manually.
+WARNING: Failed to remove contents in a temporary directory 'C:\Users\PCLTC\AppData\Local\Temp\pip-ephem-wheel-cache-nm7zq_eo'.
+You can safely remove it manually.
+WARNING: Failed to remove contents in a temporary directory 'C:\Users\PCLTC\AppData\Local\Temp\pip-install-1i6v2p14'.
+You can safely remove it manually.
