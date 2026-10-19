@@ -1,0 +1,132 @@
+337 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.8
+338 INFO: Python: 3.13.4
+386 INFO: Platform: Windows-11-10.0.26100-SP0
+386 INFO: Python environment: C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv-build
+2913 INFO: Module search paths (PYTHONPATH):
+['C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit',
+ 'C:\\Users\\PCLTC\\AppData\\Local\\Programs\\Python\\Python313\\python313.zip',
+ 'C:\\Users\\PCLTC\\AppData\\Local\\Programs\\Python\\Python313\\DLLs',
+ 'C:\\Users\\PCLTC\\AppData\\Local\\Programs\\Python\\Python313\\Lib',
+ 'C:\\Users\\PCLTC\\AppData\\Local\\Programs\\Python\\Python313',
+ 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build',
+ 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages',
+ '__editable__.thirtytutors-1.2.1+companionlite.6.finder.__path_hook__',
+ 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\win32',
+ 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\win32\\lib',
+ 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\pythonwin',
+ 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit']
+3810 INFO: Appending 'datas' from .spec
+3867 INFO: checking Analysis
+3921 INFO: Building because excludes changed
+3921 INFO: Looking for Python shared library...
+3921 INFO: Using Python shared library: C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\python313.dll
+3921 INFO: Running Analysis Analysis-00.toc
+3921 INFO: Target bytecode optimization level: 0
+3921 INFO: Initializing module dependency graph...
+3924 INFO: Initializing module graph hook caches...
+3947 INFO: Analyzing modules for base_library.zip ...
+6282 INFO: Processing standard module hook 'hook-encodings.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+7071 INFO: Processing standard module hook 'hook-math.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+7371 INFO: Processing standard module hook 'hook-heapq.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+8955 INFO: Processing standard module hook 'hook-pickle.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+10832 INFO: Caching module dependency graph...
+10886 INFO: Analyzing C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\thirtytutors\desktop_entry.py
+10899 INFO: Processing standard module hook 'hook-uvicorn.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+11968 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+12215 INFO: Processing standard module hook 'hook-xml.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+12610 INFO: Processing standard module hook 'hook-_ctypes.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+13843 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+13846 INFO: SetuptoolsInfo: initializing cached setuptools info...
+15514 INFO: Processing standard module hook 'hook-platform.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+15872 INFO: Processing standard module hook 'hook-difflib.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+16060 INFO: Processing standard module hook 'hook-webbrowser.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+16363 INFO: Processing standard module hook 'hook-websockets.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+17863 INFO: Processing standard module hook 'hook-anyio.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+19247 INFO: Processing standard module hook 'hook-webview.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\webview\\__pyinstaller'
+19772 INFO: Processing standard module hook 'hook-jinja2.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+20781 INFO: Processing pre-safe-import-module hook 'hook-gi.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+20975 INFO: Processing standard module hook 'hook-clr.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\pythonnet\\_pyinstaller'
+21007 INFO: Processing standard module hook 'hook-clr_loader.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+21163 INFO: Processing standard module hook 'hook-pycparser.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+21388 INFO: Processing standard module hook 'hook-setuptools.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+21406 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+21525 INFO: Processing standard module hook 'hook-sysconfig.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+21533 INFO: Processing pre-safe-import-module hook 'hook-jaraco.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+21534 INFO: Setuptools: 'jaraco' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco'!
+21552 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+21553 INFO: Setuptools: 'more_itertools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.more_itertools'!
+21759 INFO: Processing standard module hook 'hook-_osx_support.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+21826 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+22186 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+22188 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+22202 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+22203 INFO: Setuptools: 'backports' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.backports'!
+22918 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+22919 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+23620 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+23622 INFO: Setuptools: 'wheel' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.wheel'!
+24663 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+24765 INFO: Processing standard module hook 'hook-cryptography.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+27560 INFO: hook-cryptography: cryptography does not seem to be using dynamically linked OpenSSL.
+28042 INFO: Processing pre-safe-import-module hook 'hook-platformdirs.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+28063 INFO: Processing standard module hook 'hook-platformdirs.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+28531 INFO: Processing standard module hook 'hook-pydantic.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+29998 INFO: Processing standard module hook 'hook-zoneinfo.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+30187 INFO: Processing standard module hook 'hook-rich.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+31424 INFO: Processing standard module hook 'hook-pygments.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+36395 INFO: Processing standard module hook 'hook-opentelemetry.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+36994 INFO: Processing standard module hook 'hook-sqlite3.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+37748 INFO: Processing standard module hook 'hook-numpy.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks'
+41116 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+41879 INFO: Processing standard module hook 'hook-certifi.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+44469 INFO: Processing standard module hook 'hook-urllib3.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+47042 INFO: Processing standard module hook 'hook-docx.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+47231 INFO: Processing standard module hook 'hook-lxml.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+47873 INFO: Processing standard module hook 'hook-lxml.etree.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+48553 INFO: Analyzing hidden import 'google.genai._local_tokenizer_loader'
+48562 INFO: Analyzing hidden import 'google.genai._test_api_client'
+48701 INFO: Analyzing hidden import 'google.genai.local_tokenizer'
+48719 INFO: Processing module hooks (post-graph stage)...
+49357 INFO: Processing standard module hook 'hook-lxml.isoschematron.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+49445 WARNING: Hidden import "pycparser.lextab" not found!
+49445 WARNING: Hidden import "pycparser.yacctab" not found!
+49950 WARNING: Hidden import "tzdata" not found!
+52872 INFO: Processing standard module hook 'hook-lxml.objectify.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+52893 INFO: Performing binary vs. data reclassification (249 entries)
+53446 INFO: Looking for ctypes DLLs
+53579 INFO: Analyzing run-time hooks ...
+53591 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+53595 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+53599 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+53603 INFO: Including run-time hook 'pyi_rth_cryptography_openssl.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\rthooks'
+53604 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+53648 INFO: Creating base_library.zip...
+53720 INFO: Looking for dynamic libraries
+57446 INFO: Extra DLL search directories (AddDllDirectory): ['C:\\Users\\PCLTC\\Downloads\\thirtytutors-baseline-audit\\.venv-build\\Lib\\site-packages\\numpy.libs']
+57446 INFO: Extra DLL search directories (PATH): []
+58531 INFO: Warnings written to C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\build\CompanionLite\warn-CompanionLite.txt
+58744 INFO: Graph cross-reference written to C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\build\CompanionLite\xref-CompanionLite.html
+58838 INFO: checking PYZ
+58975 INFO: Building because C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\thirtytutors\constants.py changed
+58975 INFO: Building PYZ (ZlibArchive) C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\build\CompanionLite\PYZ-00.pyz
+60843 INFO: Building PYZ (ZlibArchive) C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\build\CompanionLite\PYZ-00.pyz completed successfully.
+60909 INFO: checking PKG
+60920 INFO: Building because C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\build\CompanionLite\PYZ-00.pyz changed
+60920 INFO: Building PKG (CArchive) CompanionLite.pkg
+60967 INFO: Building PKG (CArchive) CompanionLite.pkg completed successfully.
+60968 INFO: Bootloader C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv-build\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+60968 INFO: checking EXE
+60982 INFO: Rebuilding EXE-00.toc because pkg is more recent
+60982 INFO: Building EXE from EXE-00.toc
+60987 INFO: Copying bootloader EXE to C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\build\CompanionLite\CompanionLite.exe
+61051 INFO: Copying icon to EXE
+61100 INFO: Copying 0 resources to EXE
+61100 INFO: Embedding manifest in EXE
+61150 INFO: Appending PKG archive to EXE
+61283 INFO: Fixing EXE headers
+61735 INFO: Building EXE from EXE-00.toc completed successfully.
+61741 INFO: checking COLLECT
+61759 INFO: Removing dir C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\dist\CompanionLite
+63152 INFO: Building COLLECT COLLECT-00.toc
+64030 INFO: Building COLLECT COLLECT-00.toc completed successfully.
+64041 INFO: Build complete! The results are available in: C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\dist

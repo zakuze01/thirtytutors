@@ -51,5 +51,31 @@ not recorded. Windows global microphone permissions were not changed this turn.
 - JavaScript syntax and Ruff checks pass. These checks use synthetic media and
   do not establish real speech recognition, echo cancellation or cloud latency.
 
-Windows packaging and installed-app evidence are appended after verification.
-No public release or installer upload is authorized or performed.
+## Windows verification
+
+Clean build source: `cb3afe1c258aa8ca87484d4f03cd4d3589555849`.
+PyInstaller and NSIS exited 0. Isolated frozen UI loaded with mic off in 5.215 s,
+then exited 0. Installer size: 34,078,651 bytes; SHA-256:
+`00ecc6835eb46cb217d6cfa5803003a506dbb7f1950ba2ce63a1b6b1bc5bc593`.
+Forbidden asset/dependency and credential-pattern scans passed.
+
+After normal application shutdown, a DPAPI encrypted local rollback was created.
+In-place per-user installation exited 0. All five application data files matched
+their pre-update hashes before restart. Installed EXE and all four relevant
+static files matched the tested bundle/source.
+
+The installed app was launched at a new loopback origin and connected to Gemini.
+Its continuous-listening button now reached the permission prompt directly,
+without manually refreshing the device list. The permission popup caused blur
+and safely cancelled the pending request, as expected. After Allow and a second
+explicit click, capture opened the saved physical Realtek input without opening
+settings/reselecting devices. The UI showed Micro đang bật · nghe liên tục,
+Tắt mic, Realtek's track label and a live changing input meter (-54 dBFS in one
+accessibility capture; -46 dBFS in the corresponding screenshot). Escape was
+used to stop capture after the check. This confirms actual device acquisition
+after restart, not speech recognition accuracy or echo quality. A new-origin
+permission prompt and second click after focus loss remain possible.
+
+Only redacted test/build results are committed. No private data snapshot,
+credential or transcript is included. No public release or installer upload was
+performed. Clean-machine Windows 10/11 acceptance remains outstanding.

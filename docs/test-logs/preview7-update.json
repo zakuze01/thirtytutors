@@ -1,0 +1,12 @@
+{
+  "installer_exit": 0,
+  "all_data_hashes_preserved": true,
+  "data_files": 5,
+  "installed_exe_matches": true,
+  "installed_static_matches": [
+    "companion.js",
+    "companion.html",
+    "microphone.js",
+    "speech-gate.js"
+  ]
+}
