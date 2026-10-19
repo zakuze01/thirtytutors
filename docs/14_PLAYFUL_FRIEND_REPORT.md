@@ -46,3 +46,14 @@ Build and test evidence is appended after verification. No public release.
 Pre-build verification: 94 existing policy/config/live-routing/Groq/DeepSeek
 checks pass, zero failures/skips, 101.97s. Ruff lint/format and diff whitespace
 checks pass. These tests use mocked cloud providers and do not score humor.
+
+Windows build source `13436cb516a9d058ebd9c9705b67785981db9999` was clean.
+PyInstaller and NSIS exited 0. Frozen UI loaded with mic off in 4.964s and exited
+0. Installer size 60,805,152 bytes; SHA-256
+`9f5af30c5dfcb7dcd8e048d01f355dc22e9444f3f1a6ea298f155265902f3209`.
+Credential-pattern and forbidden-asset scans passed. Encrypted rollback was made
+with the app already closed. In-place update exited 0 and all five data files
+matched their pre-update hashes. Installed EXE/static/offline-engine/license/source
+files matched the tested build. App remains closed for the user to open and try
+Friend + Nhây hài. Real model humor, voice quality and physical audio are not
+established by these checks. No public artifact upload or release was made.
