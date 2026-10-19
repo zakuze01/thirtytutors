@@ -1,0 +1,7 @@
+{
+  "uninstall_while_running_exit": 2,
+  "registration_preserved": true,
+  "install_exit": 0,
+  "install_while_running_exit": 2,
+  "exe_preserved": true
+}

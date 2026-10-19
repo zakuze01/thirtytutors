@@ -1,0 +1,55 @@
+{
+  "working_set_bytes": 542650368.0,
+  "process_count": 7,
+  "sample_seconds": 10,
+  "logical_processors": 16,
+  "gpu": "INCONCLUSIVE",
+  "scope": "Installed app + descendant WebView2; no provider/mic; idle page",
+  "elapsed_seconds_before_sample": 147.13,
+  "private_bytes": 791494656.0,
+  "processes": [
+    {
+      "ProcessName": "CompanionLite",
+      "Id": 17916,
+      "WorkingSet64": 186707968,
+      "PrivateMemorySize64": 648220672
+    },
+    {
+      "ProcessName": "msedgewebview2",
+      "Id": 6400,
+      "WorkingSet64": 77807616,
+      "PrivateMemorySize64": 52531200
+    },
+    {
+      "ProcessName": "msedgewebview2",
+      "Id": 8236,
+      "WorkingSet64": 13717504,
+      "PrivateMemorySize64": 3162112
+    },
+    {
+      "ProcessName": "msedgewebview2",
+      "Id": 19820,
+      "WorkingSet64": 42983424,
+      "PrivateMemorySize64": 13152256
+    },
+    {
+      "ProcessName": "msedgewebview2",
+      "Id": 21144,
+      "WorkingSet64": 70094848,
+      "PrivateMemorySize64": 29614080
+    },
+    {
+      "ProcessName": "msedgewebview2",
+      "Id": 23992,
+      "WorkingSet64": 20930560,
+      "PrivateMemorySize64": 7733248
+    },
+    {
+      "ProcessName": "msedgewebview2",
+      "Id": 24428,
+      "WorkingSet64": 130408448,
+      "PrivateMemorySize64": 37081088
+    }
+  ],
+  "cpu_percent_machine": 0.088
+}
