@@ -46,7 +46,7 @@ async function chooseConversation(id) {
   for (const turn of conv.turns) addTranscript(turn.role, turn.text);
   $('voice').value = conv.config.voice_name; $('model').value = conv.config.model_name;
   $('difficulty').value = conv.config.difficulty;
-  $('mode').value = conv.config.mode || 'friend'; $('replyLanguage').value = conv.config.reply_language_preference || 'english_first';
+  $('mode').value = conv.config.mode || 'friend'; $('replyLanguage').value = conv.config.reply_language_preference || 'balanced';
   $('correction').value = conv.config.correction_intensity || 'gentle'; $('pace').value = conv.config.speech_pace || 'natural';
   $('remember').checked = conv.config.memory_policy === 'allowed'; $('scenario').value=conv.config.scenario || 'free_learning';
   const profile=await api(`/api/profiles/${profileId}`);$('nickname').value=profile.name;

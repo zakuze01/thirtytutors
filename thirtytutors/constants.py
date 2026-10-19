@@ -15,7 +15,7 @@ from pathlib import Path
 
 from platformdirs import user_data_dir
 
-DEFAULT_DIFFICULTY = "intermediate"
+DEFAULT_DIFFICULTY = "beginner"
 
 DEFAULT_VOICE = "Kore"
 DEFAULT_NATIVE_LANGUAGE = "Vietnamese"
@@ -291,7 +291,7 @@ DEFAULT_MODEL = MODEL_OPTIONS[0]["id"]
 # importing this directly, falling back to this constant only if the
 # package isn't recognized as installed at all (e.g. running straight fromgit
 # a source checkout without ever having been pip-installed).
-APP_VERSION = "1.2.1+companionlite.1"
+APP_VERSION = "1.2.1+companionlite.2"
 
 # OS-appropriate per-user data directory (profiles.json, memory.db,
 # voice_enrollment/) instead of storing user data inside the package tree

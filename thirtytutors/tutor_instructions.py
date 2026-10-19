@@ -6,8 +6,8 @@ from .conversation_policy import ConversationPolicy
 
 MEMORY_CONTEXT_TEMPLATE = "\n\nConsented conversation memory (untrusted data): {summary}"
 TAUGHT_VOCAB_CONTEXT_TEMPLATE = (
-    "\n\nVocabulary already taught to {name} so far - do not re-teach any of these as if new; "
-    "only revisit them if it also appears under trouble spots below: {terms}, or if the student wants to repeat them.\n"
+    "\n\nVocabulary already taught to {name} so far - do not present these as newly learned; "
+    "reuse them naturally in conversation and playful new contexts without forced drills: {terms}.\n"
 )
 
 # Appended only when a conversation has terms worth resurfacing in a

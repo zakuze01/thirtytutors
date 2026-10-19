@@ -14,6 +14,13 @@ large mic button or Space to speak; release to stop capture. Stop audio/Escape c
 playback. Friend is the default; Teacher, correction and reply-language preferences
 can change in the same conversation via controlled provider reconnect.
 
+For playful first English practice, choose Bạn bè, Việt–Anh tự nhiên and Mới tập
+nói. These are the defaults for new conversations/profiles in preview 2. Existing
+saved preferences remain unchanged: select the new language/level explicitly and
+save Settings, then reconnect. The companion uses short Vietnamese bridges and
+small English phrases, with occasional gentle humor; actual speech quality still
+requires live testing. This level does not assume the user's age.
+
 The app does not promise exact speech-rate control or transcript-based pronunciation
 scores. Real model/voice quality still needs live acceptance. Voice preview is online,
 user initiated and uses your quota. No avatar, video or speaker-model downloads occur.

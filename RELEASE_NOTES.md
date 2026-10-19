@@ -1,5 +1,11 @@
 # Companion Lite private QA preview
 
+Preview 2 (`1.2.1+companionlite.2`): Friend Mode now supports playful beginner
+Vietnamese–English scaffolding, short phrases, natural recasts and optional gentle
+humor. New defaults are balanced languages and beginner; existing saved preferences
+are retained. Familiar vocabulary can recur naturally without forced drills.
+See docs/06_BILINGUAL_PLAY_REPORT.md for verification and live limitations.
+
 Derived from ThirtyTutors 1.2.1 at 2d37a142d0552ac44ac69b54d0d78ddbf7c49c04.
 M0–M5 implementation is committed with local QA evidence; V1 acceptance is incomplete.
 
