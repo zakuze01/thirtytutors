@@ -131,6 +131,7 @@ function connect() {
   s.onclose = () => {
     if (s !== socket || s.manual) return;
     connected = false; $('talk').disabled = true; policyControls(false); stopRecording(); stopAudio();
+    if(quotaBlocked){status('Groq đang bị giới hạn · chọn Retry hoặc chuyển sang Gemini trả phí.');return;}
     status('Reconnecting · Chọn Retry để thử ngay');
     retryTimer = setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(30000, reconnectDelay * 2);
   };
