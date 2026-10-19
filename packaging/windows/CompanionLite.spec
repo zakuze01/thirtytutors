@@ -7,8 +7,8 @@ datas = [(str(root / 'thirtytutors/static'), 'thirtytutors/static'),
 datas += collect_data_files('webview') + copy_metadata('google-genai')
 a = Analysis([str(root / 'thirtytutors/desktop_entry.py')], pathex=[str(root)],
              datas=datas, binaries=[],
-             hiddenimports=collect_submodules('google.genai') + ['webview.platforms.winforms', 'webview.platforms.edgechromium', 'win32crypt'],
-             excludes=['torch','librosa','scipy','resemblyzer','webrtcvad','langfuse','PyQt5','PyQt6','PySide2','PySide6','tkinter','IPython'],
+             hiddenimports=collect_submodules('google.genai', filter=lambda name: not name.startswith('google.genai.tests')) + ['webview.platforms.winforms', 'webview.platforms.edgechromium', 'win32crypt'],
+             excludes=['google.genai.tests','pytest','_pytest','torch','librosa','scipy','resemblyzer','webrtcvad','langfuse','PyQt5','PyQt6','PySide2','PySide6','tkinter','IPython'],
              noarchive=False)
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='CompanionLite',
