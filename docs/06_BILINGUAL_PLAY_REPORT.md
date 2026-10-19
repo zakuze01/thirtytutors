@@ -39,6 +39,13 @@ turn exactly once; existing same-policy resumption and mid-response mode tests p
 These assertions check assembled instructions, not generated model behavior.
 
 Windows rebuild/native smoke evidence is recorded in `test-logs/bilingual2-*`.
+PyInstaller and NSIS succeeded. Final onedir EXE returned exit 0 and loaded the
+native page in 4.226 seconds in one smoke run, with mic off. Bundled HTML hash
+matches current source. This single timing is not a performance benchmark.
+Installer bytes: 34,040,363. SHA256:
+`75b47289703e6d1395145c30fdb9437da82270771076ff76695ea8868fcc1fa1`.
+Installer logic is unchanged from the previously exercised install/uninstall;
+preview 2 has not been installed over the owner's current installation here.
 No existing installed app or private profile is overwritten during QA: native
 smoke runs the new onedir build with separate synthetic storage. The installer
 is provided for explicit owner installation after closing the current app.

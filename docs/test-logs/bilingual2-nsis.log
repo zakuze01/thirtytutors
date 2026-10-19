@@ -1,0 +1,20 @@
+Processing config: C:\Users\PCLTC\Downloads\ThirtyTutors-build-tools\nsis-3.12\nsisconf.nsh
+Processing script file: "packaging\windows\installer.nsi" (ACP)
+
+Processed 1 file, writing output (x86-unicode):
+
+Output: "C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\dist\CompanionLite-Preview-Setup.exe"
+Install: 3 pages (192 bytes), 1 section (2072 bytes), 1044 instructions (29232 bytes), 777 strings (69598 bytes), 1 language table (266 bytes).
+Uninstall: 2 pages (192 bytes), 1 section (2072 bytes), 73 instructions (2044 bytes), 99 strings (3198 bytes), 1 language table (250 bytes).
+Datablock optimizer saved 312728 bytes (~0.3%).
+
+Using lzma (compress whole) compression.
+
+EXE header size:               51712 / 38912 bytes
+Install code:                          (101824 bytes)
+Install data:                          (92296246 bytes)
+Uninstall code+data:                   (22120 bytes)
+Compressed data:            33988647 / 92420190 bytes
+CRC (0x130A38D7):                  4 / 4 bytes
+
+Total size:                 34040363 / 92459106 bytes (36.8%)
