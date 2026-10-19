@@ -121,6 +121,44 @@ class FakeClient:
         self.aio = SimpleNamespace(live=SimpleNamespace(connect=lambda model, config: FakeLiveConnectCM(session)))
 
 
+def test_policy_switch_mid_response_preserves_turns_and_clears_old_session(monkeypatch, ws_app, make_profile, make_conversation):
+    profile = make_profile(api_key="fake-key")
+    conv = make_conversation(profile["id"])
+    first = FakeLiveSession(
+        responses=[
+            _response(server_content=_server_content(input_text="Yesterday tôi đi gặp khách hàng")),
+            _response(server_content=_server_content(output_text="Tell me about it.")),
+        ]
+    )
+    second = FakeLiveSession()
+    client = ws_app(first)
+    configs = []
+
+    def connect(model, config):
+        configs.append(config)
+        return FakeLiveConnectCM(first if len(configs) == 1 else second)
+
+    fake_client = SimpleNamespace(aio=SimpleNamespace(live=SimpleNamespace(connect=connect)))
+    monkeypatch.setattr(live_session, "get_client_for_key", lambda key: fake_client)
+    with client.websocket_connect("/ws/session") as ws:
+        ws.send_json({"type": "init", "profile_id": profile["id"], "conversation_id": conv["id"]})
+        assert ws.receive_json()["type"] == "session_status"
+        assert ws.receive_json()["type"] == "transcript_in"
+        assert ws.receive_json()["type"] == "transcript_out"
+        ws.send_json({"type": "policy_change", "policy": {"mode": "teacher"}})
+        assert ws.receive_json()["type"] == "policy_pending"
+        changed = ws.receive_json()
+        assert changed["type"] == "session_status"
+        assert changed["mode"] == "teacher"
+        assert changed["resumed"] is False
+        ws.send_json({"type": "close"})
+    assert len(configs) == 2
+    assert "at most two high-impact errors" in str(configs[1].system_instruction)
+    assert "Yesterday tôi đi gặp khách hàng" in str(configs[1].system_instruction)
+    assert len(memory.get_turns(conv["id"])) == 2
+    assert memory.get_conversation(conv["id"])["config"]["mode"] == "teacher"
+
+
 def _server_content(input_text=None, output_text=None, turn_complete=False):
     return SimpleNamespace(
         input_transcription=SimpleNamespace(text=input_text) if input_text else None,

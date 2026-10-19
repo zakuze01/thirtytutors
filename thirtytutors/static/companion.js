@@ -42,11 +42,13 @@ async function chooseConversation(id) {
   for (const turn of conv.turns) addTranscript(turn.role, turn.text);
   $('voice').value = conv.config.voice_name; $('model').value = conv.config.model_name;
   $('difficulty').value = conv.config.difficulty;
+  $('mode').value = conv.config.mode || 'friend'; $('replyLanguage').value = conv.config.reply_language_preference || 'english_first';
+  $('correction').value = conv.config.correction_intensity || 'gentle'; $('pace').value = conv.config.speech_pace || 'natural';
   status('Sẵn sàng · Micro đang tắt');
 }
 async function newConversation() {
   if (!profileId) { $('settings').showModal(); return; }
-  const conv = await api(basePath(), 'POST', {voice_name:$('voice').value, model_name:$('model').value, difficulty:$('difficulty').value, native_language:'Vietnamese', target_language:'English'});
+  const conv = await api(basePath(), 'POST', {voice_name:$('voice').value, model_name:$('model').value, ...selectedPolicy(), scenario:$('scenario').value, native_language:'Vietnamese', target_language:'English'});
   await loadHistory(); await chooseConversation(conv.id);
 }
 function disconnect() {
@@ -64,7 +66,8 @@ function connect() {
     const msg = JSON.parse(event.data);
     if (msg.type === 'session_status') {
       connected = !msg.unavailable; $('talk').disabled = !connected;
-      if (connected) { reconnectDelay = 2000; status('Listening · Sẵn sàng'); }
+      if (connected) { reconnectDelay = 2000; mutedUntilTurn=false; $('mode').value=msg.mode || 'friend'; $('mode').disabled=false; status('Listening · Sẵn sàng'); }
+    } else if (msg.type === 'policy_pending') { connected=false; $('talk').disabled=true; status('Reconnecting · Đang đổi chế độ');
     } else if (msg.type === 'audio') { if (!mutedUntilTurn) playAudio(msg.data).catch(showError); }
     else if (msg.type === 'interrupted') { stopAudio(); mutedUntilTurn = false; }
     else if (msg.type === 'transcript_in') addTranscript('user', msg.text, true);
@@ -82,6 +85,12 @@ function connect() {
   };
 }
 function send(msg) { if (socket?.readyState === WebSocket.OPEN && connected) socket.send(JSON.stringify(msg)); }
+function selectedPolicy() { return {mode:$('mode').value,reply_language_preference:$('replyLanguage').value,correction_intensity:$('correction').value,difficulty:$('difficulty').value,speech_pace:$('pace').value}; }
+function changePolicy() {
+  if (!connected) {status('Kết nối trước khi áp dụng thay đổi cho hội thoại hiện tại.'); return;}
+  stopRecording();stopAudio();send({type:'policy_change',policy:selectedPolicy()});$('mode').disabled=true;status('Đang yêu cầu đổi chính sách...');
+}
+for(const id of ['mode','replyLanguage','correction','pace'])$(id).addEventListener('change',changePolicy);
 function encodePCM(samples) {
   const pcm = new Int16Array(samples.length);
   for (let i = 0; i < samples.length; i++) { const v = Math.max(-1, Math.min(1, samples[i])); pcm[i] = v < 0 ? v * 32768 : v * 32767; }
@@ -150,7 +159,8 @@ $('settingsForm').onsubmit = async e => {e.preventDefault();try {const p=await a
 const wave = $('wave').getContext('2d');
 function drawWave() {const a=micAnalyser || (sources.size ? playbackAnalyser : null);wave.clearRect(0,0,640,100);wave.strokeStyle='#176679';wave.lineWidth=2;wave.beginPath();const values=new Uint8Array(a?.frequencyBinCount || 128);if(a)a.getByteTimeDomainData(values);else values.fill(128);for(let i=0;i<values.length;i++){const x=i/(values.length-1)*640,y=50+(values[i]-128)*.35;i?wave.lineTo(x,y):wave.moveTo(x,y);}wave.stroke();requestAnimationFrame(drawWave);}drawWave();
 async function init() {
-  const [voices, models, profiles] = await Promise.all([api('/api/voices'),api('/api/models'),api('/api/profiles')]);
+  const [voices, models, profiles, scenarios] = await Promise.all([api('/api/voices'),api('/api/models'),api('/api/profiles'),api('/api/scenarios')]);
+  for(const s of scenarios.scenarios)option($('scenario'),s.id,s.label);
   for(const v of voices.voices)option($('voice'),v.name,`${v.name} · ${v.descriptor}`);$('voice').value=voices.default;
   for(const m of models.models)option($('model'),m.id,m.label);$('model').value=models.default;
   for(const p of profiles.profiles)option($('profile'),p.id,p.name);

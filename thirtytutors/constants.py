@@ -17,8 +17,8 @@ from platformdirs import user_data_dir
 DEFAULT_DIFFICULTY = "intermediate"
 
 DEFAULT_VOICE = "Kore"
-DEFAULT_NATIVE_LANGUAGE = "English"
-DEFAULT_TARGET_LANGUAGE = "Polish"
+DEFAULT_NATIVE_LANGUAGE = "Vietnamese"
+DEFAULT_TARGET_LANGUAGE = "English"
 
 # Non-realtime text model used only for periodic rolling-summary folding
 # (memory.py / summarize_conversation in summarization.py) - cheap

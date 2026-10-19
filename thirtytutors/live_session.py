@@ -132,6 +132,7 @@ from .constants import (
     VOICE_OPTIONS,
     get_api_voice_name,
 )
+from .conversation_policy import ConversationPolicy
 from .profiles_store import get_client_for_key, get_profile_by_id, patch_profile
 from .summarization import summarize_conversation
 from .tutor_instructions import build_system_instruction
@@ -253,6 +254,8 @@ def build_config(
 
     scenario_id = conv_config.get("scenario") or scenarios.DEFAULT_SCENARIO
     scenario_template = scenarios.SCENARIO_TEMPLATES.get(scenario_id, scenarios.SCENARIO_TEMPLATES[scenarios.DEFAULT_SCENARIO])
+    if scenario_id == scenarios.DEFAULT_SCENARIO:
+        scenario_template = ""
     difficulty = conv_config.get("difficulty") or DEFAULT_DIFFICULTY
 
     system_instruction = build_system_instruction(
@@ -265,6 +268,7 @@ def build_config(
         summary_text=summary_text,
         review_terms=review_terms,
         taught_vocab=taught_vocab,
+        policy=ConversationPolicy.from_config(conv_config),
     )
 
     # Plain (non-transparent) resumption. transparent=True (Google's
@@ -788,6 +792,12 @@ def _refresh_conversation_memory_context(conv: dict, config_identity: dict) -> t
     )
     summary_row = memory.get_summary(conv["id"])
     summary_text = summary_row["summary"] if summary_row else None
+    recent = memory.get_turns(conv["id"])[-12:]
+    if recent:
+        tail = "\nRecent observed turns (transcription may be inaccurate):\n" + "\n".join(
+            f"{turn['role']}: {turn['text'][:400]}" for turn in recent
+        )
+        summary_text = (summary_text or "")[:1200] + tail
     review_terms = memory.get_review_candidates(conv["id"])
     taught_vocab = memory.get_taught_vocab(conv["id"])
     return conv, resumption_handle, summary_text, review_terms, taught_vocab
@@ -978,6 +988,7 @@ async def ws_session(websocket: WebSocket):
                 "resumed": resumed,
                 "conversation_name": (conv or {}).get("name"),
                 "model_name": model_name,
+                "mode": conv_config.get("mode", "friend"),
             }
         )
     except Exception as exc:  # noqa: BLE001
@@ -1201,6 +1212,7 @@ async def ws_session(websocket: WebSocket):
                     await sender.send_audio(window_bytes, "hands-free")
 
                 async def browser_to_live():
+                    nonlocal conv_config, config_identity
                     while True:
                         msg = await websocket.receive_json()
                         msg_type = msg.get("type")
@@ -1209,7 +1221,22 @@ async def ws_session(websocket: WebSocket):
                             continue  # voice input gated while a quiz is open - see quiz_state
 
                         try:
-                            if msg_type == "start_turn":
+                            if msg_type == "policy_change":
+                                try:
+                                    policy = ConversationPolicy.from_config({**conv_config, **msg.get("policy", {})})
+                                except (TypeError, ValueError):
+                                    await websocket.send_json({"type": "error", "message": "Invalid conversation policy."})
+                                    continue
+                                await flush_turn_buffer_to_memory(sender)
+                                sender.clear()
+                                conv_config = {**conv_config, **policy.to_dict()}
+                                config_identity = dict(conv_config)
+                                if conv is not None:
+                                    memory.update_conversation(conv["id"], config=conv_config)
+                                    memory.clear_resumption(conv["id"])
+                                await websocket.send_json({"type": "policy_pending", "mode": policy.mode})
+                                return "policy_change"
+                            elif msg_type == "start_turn":
                                 sender.clear("push-to-talk")
                                 await sender.send_activity_start()
                             elif msg_type == "audio_chunk":
@@ -1511,6 +1538,7 @@ async def ws_session(websocket: WebSocket):
                 done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
                 for task in pending:
                     task.cancel()
+                await asyncio.gather(*pending, return_exceptions=True)
 
                 # What ended this iteration: a task exception (something
                 # actually went wrong with the Gemini session, not just this
@@ -1533,7 +1561,7 @@ async def ws_session(websocket: WebSocket):
                         else:
                             task_exception = task_exception or exc
                             print(f"[ws_session] live task failed: {type(exc).__name__}: {exc}")
-                    elif task is live_task and task.result() == "go_away":
+                    elif task.result() in ("go_away", "policy_change"):
                         go_away_closed = True
 
                 if browser_disconnected or (task_exception is None and not go_away_closed):
@@ -1708,6 +1736,7 @@ async def ws_session(websocket: WebSocket):
                             "resumed": resumed,
                             "conversation_name": (conv or {}).get("name"),
                             "model_name": model_name,
+                            "mode": conv_config.get("mode", "friend"),
                         }
                     )
                 except Exception as exc:  # noqa: BLE001

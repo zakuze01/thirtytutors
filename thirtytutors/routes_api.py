@@ -37,6 +37,7 @@ from .constants import (
     THRESHOLD_TEST_SENTENCES,
     VOICE_OPTIONS,
 )
+from .conversation_policy import CHOICES, ConversationPolicy
 from .export_docx import build_notes_docx
 from .languages import LANGUAGES
 from .profiles_store import (
@@ -667,6 +668,10 @@ async def create_conversation_endpoint(profile_id: str, request: Request):
         "scenario": payload.get("scenario") or scenarios.DEFAULT_SCENARIO,
         "difficulty": payload.get("difficulty") or profile.get("default_difficulty") or DEFAULT_DIFFICULTY,
     }
+    try:
+        config.update(ConversationPolicy.from_config({**config, **{k: payload[k] for k in CHOICES if k in payload}}).to_dict())
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(400, "Invalid conversation policy") from exc
     name = (payload.get("name") or "").strip() or None
     conv = memory.create_conversation(profile_id, config, name=name)
     patch_profile(profile_id, {"active_conversation_id": conv["id"]})
