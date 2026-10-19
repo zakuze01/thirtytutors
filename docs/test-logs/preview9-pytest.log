@@ -1,0 +1,117 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-9.1.1, pluggy-1.7.0
+rootdir: C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.15.1, platformdirs-4.13.5, asyncio-1.4.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 320 items
+
+tests\test_build_config.py ..................                            [  5%]
+tests\test_conversation_policy.py ......................                 [ 12%]
+tests\test_desktop.py .......                                            [ 14%]
+tests\test_groq_voice.py .........F............                          [ 21%]
+tests\test_hybrid_voice.py ..................................            [ 32%]
+tests\test_lite_runtime.py ......                                        [ 34%]
+tests\test_live_session_routing.py ................................      [ 44%]
+tests\test_memory.py ..............................................      [ 58%]
+tests\test_observability.py ...............                              [ 63%]
+tests\test_privacy.py ..........                                         [ 66%]
+tests\test_profile_backup.py ..........                                  [ 69%]
+tests\test_profiles_store.py .....................                       [ 75%]
+tests\test_quizzes.py ...........                                        [ 79%]
+tests\test_retry.py ...................                                  [ 85%]
+tests\test_routes_api.py ...........................                     [ 93%]
+tests\test_speech_detection.py .................                         [ 99%]
+tests\test_tutor_tools.py ...                                            [100%]
+
+================================== FAILURES ===================================
+_____________ test_deepseek_offline_websocket_needs_no_gemini_key _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001CA6ED6DC50>
+make_profile = <function make_profile.<locals>._make at 0x000001CA6ED9DC60>
+make_conversation = <function make_conversation.<locals>._make at 0x000001CA6ED9DE40>
+
+    def test_deepseek_offline_websocket_needs_no_gemini_key(monkeypatch, make_profile, make_conversation):
+        from thirtytutors import hybrid_session
+    
+        p = make_profile(api_key=None, groq_api_key=KEY, deepseek_api_key=DEEPSEEK_KEY)
+        c = make_conversation(p["id"], voice_provider="deepseek_local")
+    
+        def factory(key, config, **kwargs):
+            assert key == KEY and kwargs["deepseek_key"] == DEEPSEEK_KEY
+            return GroqProviders(
+                key,
+                config,
+                **kwargs,
+                speech=Speech(),
+                transport=httpx.MockTransport(lambda r: httpx.Response(200, json=chat_response())),
+            )
+    
+        monkeypatch.setattr(hybrid_session, "GroqProviders", factory)
+        client = TestClient(main.app, base_url="http://127.0.0.1", headers={"X-Companion-Token": LAUNCH_TOKEN})
+>       with client.websocket_connect("/ws/hybrid") as ws:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_groq_voice.py:190: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv-build\Lib\site-packages\starlette\testclient.py:116: in __enter__
+    self._raise_on_close(message)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <starlette.testclient.WebSocketTestSession object at 0x000001CA6ECAFCB0>
+message = {'type': 'websocket.close', 'code': 1008}
+
+    def _raise_on_close(self, message: Message) -> None:
+        if message["type"] == "websocket.close":
+>           raise WebSocketDisconnect(code=message.get("code", 1000), reason=message.get("reason", ""))
+E           starlette.websockets.WebSocketDisconnect
+
+.venv-build\Lib\site-packages\starlette\testclient.py:143: WebSocketDisconnect
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.4-final-0 _______________
+
+Name                                                   Stmts   Miss  Cover   Missing
+------------------------------------------------------------------------------------
+thirtytutors\__init__.py                                   0      0   100%
+thirtytutors\__main__.py                                   1      1     0%   7
+thirtytutors\backup.py                                   117     34    71%   20, 42, 48, 52, 55, 59, 62, 64, 66-72, 111, 117, 123-124, 130-131, 151-171
+thirtytutors\constants.py                                 48     12    75%   306, 319-329
+thirtytutors\conversation_policy.py                       34      0   100%
+thirtytutors\desktop.py                                   61     11    82%   99-109
+thirtytutors\desktop_entry.py                             48     48     0%   3-63
+thirtytutors\export_docx.py                               47     11    77%   19, 27, 29-30, 49, 57, 67-71
+thirtytutors\friendly_slang.py                             3      0   100%
+thirtytutors\groq_provider.py                             83      8    90%   36, 67, 72, 75, 88, 93, 120, 123
+thirtytutors\hybrid_session.py                           190     11    94%   114, 123, 130, 149, 162, 236, 238-242
+thirtytutors\languages.py                                  1      0   100%
+thirtytutors\live_session.py                             727    204    72%   146-149, 241-243, 344-345, 349-356, 360-370, 417-429, 594-596, 676-710, 722-724, 752, 758, 816, 848-849, 865, 945-946, 957-958, 981-991, 1002, 1015-1016, 1054-1055, 1179, 1198-1237, 1252-1254, 1265-1283, 1311-1312, 1314-1320, 1322-1330, 1364-1365, 1390-1391, 1394-1402, 1420-1436, 1445-1446, 1500-1508, 1615, 1619, 1631, 1636-1650, 1723-1724, 1753-1767, 1787-1791, 1803-1804, 1806-1814, 1846-1848, 1865-1866, 1869-1870, 1874
+thirtytutors\local_access.py                              42      3    93%   17, 27-28
+thirtytutors\local_tts.py                                 74     12    84%   44, 48, 50, 56, 80, 82, 85, 88, 92, 96-98
+thirtytutors\main.py                                      38      1    97%   126
+thirtytutors\memory.py                                   358     10    97%   152, 237-238, 276, 616, 883, 888, 922-924
+thirtytutors\observability.py                             88     23    74%   65-79, 116-117, 136-139, 152-153, 162-165
+thirtytutors\privacy.py                                    2      0   100%
+thirtytutors\profile_recovery.py                          12     12     0%   3-20
+thirtytutors\profiles_store.py                           141      2    99%   89, 225
+thirtytutors\quizzes.py                                  169     48    72%   277-280, 288-302, 323-358
+thirtytutors\retry.py                                     36      1    97%   141
+thirtytutors\routes_api.py                               489    196    60%   72-73, 120-121, 135-179, 187-195, 205-213, 234-245, 255-259, 269-274, 287-292, 303, 316-318, 328, 333-336, 356, 436, 444-446, 451-459, 464-466, 471-476, 496-506, 518, 521-522, 533-536, 548-553, 569-571, 584, 605, 617, 633, 637, 654-655, 662, 672, 688, 693, 699, 707-708, 719, 775, 780, 809, 824, 841, 898-901, 906-910, 915-925, 930-941, 946-950, 957, 963-964
+thirtytutors\routes_pages.py                              12      1    92%   20
+thirtytutors\secret_store.py                              47      5    89%   16, 24, 32, 55-57
+thirtytutors\speech_detection\__init__.py                  3      0   100%
+thirtytutors\speech_detection\audio_utils.py              14      0   100%
+thirtytutors\speech_detection\enrollment.py               49      0   100%
+thirtytutors\speech_detection\resemblyzer_backend.py      10      6    40%   14-18, 23-24
+thirtytutors\speech_detection\verifier.py                 39      8    79%   30, 41-47
+thirtytutors\stats.py                                     52     44    15%   31, 58-93, 110-123, 137-144
+thirtytutors\summarization.py                             52     20    62%   32, 36-38, 45, 85, 95-99, 103-117
+thirtytutors\tutor_instructions.py                        19      1    95%   41
+thirtytutors\tutor_tools.py                                8      0   100%
+thirtytutors\updater.py                                   27      9    67%   7, 15, 33, 37, 41, 45, 49, 53, 57
+thirtytutors\voice_providers.py                           93      6    94%   124, 127, 129-130, 187, 194
+------------------------------------------------------------------------------------
+TOTAL                                                   3234    748    77%
+=========================== short test summary info ===========================
+FAILED tests/test_groq_voice.py::test_deepseek_offline_websocket_needs_no_gemini_key
+======================= 1 failed, 319 passed in 40.82s ========================

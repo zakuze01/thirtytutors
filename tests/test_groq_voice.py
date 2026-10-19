@@ -18,6 +18,7 @@ from thirtytutors.local_tts import LocalSpeech, SpokenReply
 from thirtytutors.voice_providers import ProviderError, provider_config
 
 KEY = "synthetic-groq-key-not-real"
+DEEPSEEK_KEY = "synthetic-deepseek-key-not-real"
 SEGMENTS = [{"lang": "vi", "text": "Chuẩn rồi!"}, {"lang": "en", "text": "Good job!"}]
 
 
@@ -61,6 +62,7 @@ def test_groq_profile_create_and_config_validation():
     p = client.post("/api/profiles", json={"name": "QA", "groq_api_key": KEY}).json()
     assert p["has_groq_api_key"] and KEY not in json.dumps(p)
     assert provider_config({"voice_provider": "groq_local"})["groq_model"] == "openai/gpt-oss-20b"
+    assert provider_config({"voice_provider": "deepseek_local"})["deepseek_model"] == "deepseek-flash"
     for config in [{"groq_model": "http://arbitrary"}, {"groq_transcription_model": "unknown"}]:
         with pytest.raises(ValueError):
             provider_config(config)
@@ -109,6 +111,94 @@ async def test_quota_stops_requests_without_retry_or_paid_provider(code):
         assert KEY not in str(error.value)
     assert len(requests) == 1 and str(requests[0].url) == CHAT_URL
     await provider.aclose()
+
+
+@pytest.mark.asyncio
+async def test_deepseek_offline_uses_groq_only_for_speech_and_isolates_keys():
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(
+            200, json={"text": "con thích a cat"} if request.url.path.endswith("transcriptions") else chat_response()
+        )
+
+    provider = GroqProviders(
+        KEY,
+        {"voice_provider": "deepseek_local"},
+        deepseek_key=DEEPSEEK_KEY,
+        transport=httpx.MockTransport(handler),
+        speech=Speech(),
+    )
+    await provider.transcribe(b"\x01\x00" * 160)
+    reply = await provider.reply("short", [], "con thích a cat")
+    await provider.speak(reply, "ignored")
+    assert [r.url.host for r in requests] == ["api.groq.com", "api.deepseek.com"]
+    assert requests[0].headers["authorization"] == "Bearer " + KEY
+    assert requests[1].headers["authorization"] == "Bearer " + DEEPSEEK_KEY
+    body = json.loads(requests[1].content)
+    assert body["model"] == "deepseek-flash" and body["thinking"] == {"type": "disabled"}
+    assert body["response_format"] == {"type": "json_object"} and body["max_tokens"] == 1024
+    assert "reasoning_effort" not in body and "max_completion_tokens" not in body
+    assert provider.speech.calls == [(SEGMENTS, False)]
+    await provider.aclose()
+
+
+@pytest.mark.parametrize("stage", ["speech", "chat"])
+@pytest.mark.asyncio
+async def test_quota_event_identifies_the_exhausted_stage(stage):
+    provider = GroqProviders(KEY, {}, speech=Speech(), transport=httpx.MockTransport(lambda r: httpx.Response(429, text=KEY)))
+    with pytest.raises(QuotaError) as error:
+        if stage == "speech":
+            await provider.transcribe(b"\x01\x00" * 160)
+        else:
+            await provider.reply("short", [], "hello")
+    assert error.value.stage == stage and error.value.provider == "Groq"
+    assert KEY not in str(error.value)
+    await provider.aclose()
+
+
+@pytest.mark.asyncio
+async def test_deepseek_missing_key_never_calls_a_provider():
+    def forbidden(request):
+        raise AssertionError("No outbound call without DeepSeek key")
+
+    provider = GroqProviders(KEY, {"voice_provider": "deepseek_local"}, speech=Speech(), transport=httpx.MockTransport(forbidden))
+    with pytest.raises(ProviderError, match="DeepSeek API key"):
+        await provider.reply("short", [], "hello")
+    await provider.aclose()
+
+
+def test_deepseek_offline_websocket_needs_no_gemini_key(monkeypatch, make_profile, make_conversation):
+    from thirtytutors import hybrid_session
+
+    p = make_profile(api_key=None, groq_api_key=KEY, deepseek_api_key=DEEPSEEK_KEY)
+    c = make_conversation(p["id"], voice_provider="deepseek_local")
+
+    def factory(key, config, **kwargs):
+        assert key == KEY and kwargs["deepseek_key"] == DEEPSEEK_KEY
+        return GroqProviders(
+            key,
+            config,
+            **kwargs,
+            speech=Speech(),
+            transport=httpx.MockTransport(lambda r: httpx.Response(200, json=chat_response())),
+        )
+
+    monkeypatch.setattr(hybrid_session, "GroqProviders", factory)
+    client = TestClient(main.app, base_url="http://127.0.0.1", headers={"X-Companion-Token": LAUNCH_TOKEN})
+    with client.websocket_connect("ws://127.0.0.1/ws/hybrid", headers={"X-Companion-Token": LAUNCH_TOKEN}) as ws:
+        ws.send_json({"type": "init", "profile_id": p["id"], "conversation_id": c["id"]})
+        assert ws.receive_json()["model_name"] == "deepseek-flash"
+        ws.send_json({"type": "voice_preview"})
+        messages = []
+        while True:
+            msg = ws.receive_json()
+            messages.append(msg)
+            if msg["type"] == "turn_complete":
+                break
+        assert any(m["type"] == "audio" for m in messages)
+        assert not any(m["type"] == "error" for m in messages)
 
 
 @pytest.mark.parametrize("content", ["not json", '{"segments":[]}', '{"segments":[{"lang":"es","text":"hello"}]}'])

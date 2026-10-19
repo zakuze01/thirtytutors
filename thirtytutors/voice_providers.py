@@ -17,7 +17,7 @@ PROVIDER_DEFAULTS = {
     "groq_transcription_model": "whisper-large-v3-turbo",
 }
 PROVIDER_CHOICES = {
-    "voice_provider": {"gemini_live", "deepseek_gemini", "groq_local"},
+    "voice_provider": {"gemini_live", "deepseek_gemini", "groq_local", "deepseek_local"},
     "groq_model": {"openai/gpt-oss-20b", "openai/gpt-oss-120b"},
     "groq_transcription_model": {"whisper-large-v3-turbo", "whisper-large-v3"},
     "deepseek_model": {"deepseek-flash", "deepseek-v4-pro"},

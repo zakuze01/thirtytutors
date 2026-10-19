@@ -99,6 +99,14 @@ HTTP 429/402 dừng yêu cầu, tắt mic và hiện cảnh báo. Chỉ bấm **
 CÓ TÍNH PHÍ** nếu muốn dùng key Gemini đã lưu. Không tự chuyển, không tự gửi lại
 lượt lỗi, không tự bật mic. Retry là thao tác thử Groq lại; app không nâng cấp gói.
 
+**Cập nhật preview 9:** nút dự phòng trên được thay bằng **DeepSeek trả lời +
+giọng offline · CÓ TÍNH PHÍ**, chỉ xuất hiện khi Groq hết quota **chat**. Cần lưu
+DeepSeek key trong Cài đặt. Sau khi bấm, Groq vẫn nghe, DeepSeek trả lời, máy đọc
+offline; không gọi Gemini. Nếu Groq hết quota **nghe**, app dừng và yêu cầu chờ
+quota phục hồi; DeepSeek không thay được STT. Có thể chọn trực tiếp **Groq nghe +
+DeepSeek trả lời (tính phí) + giọng offline**. Đổi nhà cung cấp vẫn giữ lịch sử,
+nhưng không tự gửi lại lượt lỗi hay tự bật mic.
+
 Groq key được mã hóa riêng bằng DPAPI và loại khỏi backup portable. Giọng offline
 được tạo trong RAM bằng chương trình CLI độc lập eSpeak NG 1.52.0 (GPL-3.0-or-later).
 License, thông báo và toàn bộ source tương ứng nằm trong `_internal/offline-tts/`

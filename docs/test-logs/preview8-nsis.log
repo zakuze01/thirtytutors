@@ -1,0 +1,24 @@
+MakeNSIS v3.12 - Copyright 1999-2026 Contributors
+See the file COPYING for license details.
+Credits can be found in the Users Manual.
+
+Processing config: C:\Users\PCLTC\Downloads\ThirtyTutors-build-tools\nsis-3.12\nsisconf.nsh
+Processing script file: "installer.nsi" (ACP)
+
+Processed 1 file, writing output (x86-unicode):
+
+Output: "C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\dist\CompanionLite-Preview-Setup.exe"
+Install: 3 pages (192 bytes), 1 section (2072 bytes), 1548 instructions (43344 bytes), 1247 strings (80536 bytes), 1 language table (266 bytes).
+Uninstall: 2 pages (192 bytes), 1 section (2072 bytes), 73 instructions (2044 bytes), 99 strings (3198 bytes), 1 language table (250 bytes).
+Datablock optimizer saved 819794 bytes (~0.6%).
+
+Using lzma (compress whole) compression.
+
+EXE header size:               51712 / 38912 bytes
+Install code:                          (126874 bytes)
+Install data:                          (135290298 bytes)
+Uninstall code+data:                   (22120 bytes)
+Compressed data:            60746464 / 135439292 bytes
+CRC (0x17ACE2BC):                  4 / 4 bytes
+
+Total size:                 60798180 / 135478208 bytes (44.8%)

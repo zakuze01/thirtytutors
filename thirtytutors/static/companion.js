@@ -12,15 +12,16 @@ let activeTranscript = {}, reconnectDelay = 2000;
 let editingMemoryId = null;
 let voiceProvider = 'gemini_live';
 let quotaBlocked=false;
+let quotaStage='';
 let responseStartedAt=0;
 let lastMicMeter=0,micMeterEnergy=0,micMeterSamples=0;
 function updateMicMeter(samples){for(const value of samples)micMeterEnergy+=value*value;micMeterSamples+=samples.length;const now=performance.now();if(now-lastMicMeter<100)return;lastMicMeter=now;const rms=Math.sqrt(micMeterEnergy/Math.max(1,micMeterSamples));micMeterEnergy=0;micMeterSamples=0;$('micLevel').value=Math.min(1,rms/.1);const db=rms>0?Math.max(-96,Math.round(20*Math.log10(rms))): -96;$('micLevelText').textContent=`Mức mic: ${db} dBFS · ${speechActive?'Đang gửi lời nói':rms>=Number($('sensitivity').value)?'Có tín hiệu':'Chưa bắt tiếng · thử mức Nhạy nếu nói nhỏ'}`;}
 function selectedProvider(){return {voice_provider:$('voiceProvider').value,deepseek_model:$('deepseekModel').value,tts_model:$('ttsModel').value,transcription_model:'gemini-3.5-flash-lite',groq_model:$('groqModel').value,groq_transcription_model:$('groqTranscription').value};}
-function providerControls(){const value=$('voiceProvider').value,hybrid=value==='deepseek_gemini',groq=value==='groq_local';$('deepseekSettings').hidden=!hybrid;$('groqSettings').hidden=!groq;$('model').disabled=value!=='gemini_live';$('voice').disabled=groq;$('providerNotice').textContent=groq?'Groq nhận âm thanh, transcript và ngữ cảnh được cho phép. Giọng eSpeak NG tạo offline trên máy; không gọi Gemini. Key lưu bằng mã hóa Windows.':hybrid?'Gemini nhận âm thanh; DeepSeek nhận transcript và ngữ cảnh bạn cho phép; Gemini nhận lời đáp để đọc. Hai key lưu riêng bằng mã hóa Windows.':'Gemini Live gửi âm thanh và ngữ cảnh được cho phép đến Google.';}
+function providerControls(){const value=$('voiceProvider').value,hybrid=value==='deepseek_gemini',local=value==='groq_local'||value==='deepseek_local',deepseekLocal=value==='deepseek_local';$('deepseekSettings').hidden=!(hybrid||deepseekLocal);$('cloudTtsSettings').hidden=!hybrid;$('groqSettings').hidden=!local;$('groqChatChoice').hidden=deepseekLocal;$('model').disabled=value!=='gemini_live';$('voice').disabled=local;$('providerNotice').textContent=deepseekLocal?'Groq nhận âm thanh; DeepSeek nhận transcript và ngữ cảnh được cho phép, có tính phí. Giọng đọc offline trên máy; không gọi Gemini. Phần nghe vẫn cần Groq còn quota.':local?'Groq nhận âm thanh, transcript và ngữ cảnh được cho phép. Giọng eSpeak NG tạo offline trên máy; không gọi Gemini. Key lưu bằng mã hóa Windows.':hybrid?'Gemini nhận âm thanh; DeepSeek nhận transcript và ngữ cảnh bạn cho phép; Gemini nhận lời đáp để đọc. Hai key lưu riêng bằng mã hóa Windows.':'Gemini Live gửi âm thanh và ngữ cảnh được cho phép đến Google.';}
 $('voiceProvider').onchange=providerControls;
 const status = text => { $('status').textContent = text; };
 function showQuota(stages){
-  if(voiceProvider!=='groq_local' || quotaBlocked)return;
+  if(!['groq_local','deepseek_local'].includes(voiceProvider) || quotaBlocked)return;
   const parts=[];let low=false;
   for(const [stage,data] of Object.entries(stages || {})){
     const label=stage==='speech'?'Nghe':'Chat';
@@ -32,10 +33,10 @@ function showQuota(stages){
   $('quotaPanel').hidden=false;$('quotaText').textContent=(low?'Sắp chạm hạn mức Groq. ':'')+(parts.join(' · ') || 'Groq chưa cung cấp số dư quota trong phản hồi.')+' · Đây là snapshot gần nhất, không phải số dư tiền.';
 }
 $('paidSwitch').onclick=async()=>{
-  if(!quotaBlocked || voiceProvider!=='groq_local')return;
+  if(!quotaBlocked || quotaStage!=='chat' || voiceProvider!=='groq_local')return;
   const targetProfile=profileId,targetConversation=conversationId;
   $('paidSwitch').disabled=true;
-  try{const p=await api(`/api/profiles/${targetProfile}`);if(profileId!==targetProfile || conversationId!==targetConversation || !quotaBlocked || voiceProvider!=='groq_local')return;if(!p.has_api_key){status('Cần Gemini API key để chuyển. Nhập key trong Cài đặt.');return;}disconnect();await api(`/api/profiles/${targetProfile}/conversations/${targetConversation}`,'PUT',{voice_provider:'gemini_live'});if(profileId!==targetProfile || conversationId!==targetConversation)return;await chooseConversation(targetConversation);if(profileId===targetProfile && conversationId===targetConversation)connect();}
+  try{const p=await api(`/api/profiles/${targetProfile}`);if(profileId!==targetProfile || conversationId!==targetConversation || !quotaBlocked || quotaStage!=='chat' || voiceProvider!=='groq_local')return;if(!p.has_deepseek_api_key){status('Cần DeepSeek API key để chuyển. Nhập key trong Cài đặt.');return;}disconnect();await api(`/api/profiles/${targetProfile}/conversations/${targetConversation}`,'PUT',{voice_provider:'deepseek_local'});if(profileId!==targetProfile || conversationId!==targetConversation)return;await chooseConversation(targetConversation);if(profileId===targetProfile && conversationId===targetConversation)connect();}
   catch(err){showError(err);}finally{$('paidSwitch').disabled=false;}
 };
 $('localPreview').onclick=async()=>{stopRecording();stopAudio();$('localPreview').disabled=true;try{const result=await api('/api/local-voice/preview','POST');mutedUntilTurn=false;await playAudio(result.data);}catch(err){showError(new Error('Chưa phát được giọng offline. Kiểm tra bản cài và loa.'));}finally{$('localPreview').disabled=false;}};
@@ -101,7 +102,7 @@ function disconnect() {
 }
 function connect() {
   if (!conversationId) return;
-  disconnect();quotaBlocked=false;$('quotaPanel').hidden=voiceProvider!=='groq_local';$('paidSwitch').hidden=true;$('quotaText').textContent='Groq: chưa có dữ liệu quota. Hạn mức theo tài khoản; app không xác minh được gói Free/trả phí.';status(voiceProvider==='groq_local'?'Đang chuẩn bị Groq + giọng offline':voiceProvider==='deepseek_gemini'?'Đang chuẩn bị DeepSeek + Gemini':'Đang kết nối đến Gemini');
+  disconnect();quotaBlocked=false;quotaStage='';$('quotaPanel').hidden=!['groq_local','deepseek_local'].includes(voiceProvider);$('paidSwitch').hidden=true;$('quotaText').textContent='Groq: chưa có dữ liệu quota. Hạn mức theo tài khoản; app không xác minh được gói Free/trả phí.';status(voiceProvider==='deepseek_local'?'Đang chuẩn bị Groq nghe + DeepSeek trả lời + giọng offline':voiceProvider==='groq_local'?'Đang chuẩn bị Groq + giọng offline':voiceProvider==='deepseek_gemini'?'Đang chuẩn bị DeepSeek + Gemini':'Đang kết nối đến Gemini');
   const route=voiceProvider==='gemini_live'?'session':'hybrid';
   const s = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/${route}`); socket = s;
   let turnError=false;
@@ -122,7 +123,7 @@ function connect() {
     else if (msg.type === 'transcript_out') addTranscript('model', msg.text, true);
     else if (msg.type === 'turn_complete') { if(!speechActive){activeTranscript = {}; mutedUntilTurn = false; if(!turnError)status(continuous?'Listening · Micro đang bật, bạn cứ nói':'Listening · Sẵn sàng');} turnError=false;loadHistory().catch(showError); }
     else if (msg.type === 'quota') {showQuota(msg.stages);}
-    else if (msg.type === 'quota_exhausted') {turnError=true;quotaBlocked=true;stopRecording('Groq đang bị giới hạn');stopAudio();$('quotaPanel').hidden=false;$('quotaText').textContent=msg.message;$('paidSwitch').hidden=false;$('quotaPanel').scrollIntoView({block:'center'});status(msg.message);}
+    else if (msg.type === 'quota_exhausted') {turnError=true;quotaBlocked=true;quotaStage=msg.stage==='chat'?'chat':'speech';stopRecording('Dịch vụ đang bị giới hạn');stopAudio();$('quotaPanel').hidden=false;$('quotaText').textContent=msg.message;$('paidSwitch').hidden=!(quotaStage==='chat' && voiceProvider==='groq_local' && msg.provider==='Groq');$('quotaPanel').scrollIntoView({block:'center'});status(msg.message);}
     else if (msg.type === 'error') { turnError=true;status('Error · ' + msg.message); }
     else if (msg.type === 'phase') {turnError=false;status(msg.message);}
     else if (msg.type === 'waiting_long') status(msg.active ? 'Thinking · Đang chờ Gemini' : 'Đã kết nối');
@@ -131,7 +132,7 @@ function connect() {
   s.onclose = () => {
     if (s !== socket || s.manual) return;
     connected = false; $('talk').disabled = true; policyControls(false); stopRecording(); stopAudio();
-    if(quotaBlocked){status('Groq đang bị giới hạn · chọn Retry hoặc chuyển sang Gemini trả phí.');return;}
+    if(quotaBlocked){status($('quotaText').textContent);return;}
     status('Reconnecting · Chọn Retry để thử ngay');
     retryTimer = setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(30000, reconnectDelay * 2);
   };

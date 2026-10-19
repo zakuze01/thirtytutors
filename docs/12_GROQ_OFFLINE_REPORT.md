@@ -85,3 +85,18 @@ Primary references checked 2026-10-19:
 [quota headers](https://console.groq.com/docs/rate-limits),
 [billing](https://console.groq.com/docs/billing-faqs),
 [eSpeak NG release](https://github.com/espeak-ng/espeak-ng/releases/tag/1.52.0).
+
+## Windows preview 8 evidence
+
+Clean source `458d63c2d049b8c13dec7e8565691e77f641d690`; PyInstaller and NSIS
+exited 0. Installer 60,798,180 bytes, SHA-256
+`ba35a7440b09f4b6869f5cfbde9e107433556eaaa3b48379d403472c365369aa`.
+Frozen UI loaded with mic off in 4.487s and exited 0. The exact bundled CLI/data
+produced 205,400 PCM bytes (4.279s); source archive and GPL notice were present.
+Credential and forbidden-asset scans passed. In-place install exited 0, all five
+data files matched pre-update hashes, and EXE/static/engine/license/source files
+matched the tested build. Native opening could not be confirmed: the automation
+helper first failed to launch and the user stopped the retry with physical Escape.
+No further native input was attempted after that stop. Real key entry remains
+the user's action. Preview 9 supersedes the manual Gemini fallback described above
+with a manual DeepSeek-chat/offline fallback only for chat quota.
