@@ -3,8 +3,10 @@
 **V1 acceptance is INCOMPLETE. Private local QA preview only.**
 
 Preview 5 repairs quiet/fragmented speech onset and adds local microphone signal
-diagnostics: 298 Python tests and 9 Node tests pass, 76% coverage. Physical Realtek
-capture and incorrect-language transcription still require live validation. See
+diagnostics: 298 Python tests and 9 Node tests pass, 76% coverage. The user's app
+was corrected from a saved GS3 input to explicit Realtek; native UI shows actual
+signal and detected speech being sent. Recognition/incorrect-language behavior
+still requires live validation. See
 `09_MICROPHONE_FIX_REPORT.md`.
 
 Preview 4 adds optional DeepSeek + Gemini voice and the reviewed banter examples:

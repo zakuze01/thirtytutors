@@ -67,9 +67,14 @@ this microphone patch.
   label. Blur stops all tracks, resets the meter and explains the stop.
 - Lint/format/JavaScript syntax pass. Evidence in `test-logs/preview5-*`.
 
-No real voice was recorded for these tests, no raw audio was saved, and no paid
-provider call was made. Realtek speech capture, echo, Vietnamese/English recognition
-and actual conversational quality remain **INCONCLUSIVE** until a physical test.
+The automated/synthetic tests recorded no real voice, saved no raw audio, and made
+no paid provider call. Separately, interactive setup reconnected the installed app
+to Gemini under the user's existing voice request. After saving the explicit
+Realtek device and enabling continuous capture, the native UI reported the actual
+Realtek track, microphone on, detected speech being sent, and PCM levels around
+-22 to -17 dBFS. Physical input and local turn onset are therefore observed working;
+this does not verify recognition of particular words. Echo, Vietnamese/English
+recognition and conversational quality remain **INCONCLUSIVE**.
 This patch does not claim the Spanish-transcript issue is resolved.
 
 ## Windows build and in-place update
