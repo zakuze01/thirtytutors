@@ -51,14 +51,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Upgrade build tools
         run: python -m pip install --upgrade pip setuptools wheel
-      - name: Install CPU-only torch
-        # torch is a real dependency here (resemblyzer/speech_detection
-        # needs it - see pyproject.toml), but a bare `pip install torch`
-        # defaults to a multi-GB CUDA build even on this GPU-less runner.
-        # The test suite never exercises the real model either way (see
-        # conftest.py's fake_speaker_backend) - it only needs torch to be
-        # importable, so the small CPU-only build is all CI needs.
-        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
       - name: Install package with dev dependencies
         run: pip install -e ".[dev]"
       - name: Run tests

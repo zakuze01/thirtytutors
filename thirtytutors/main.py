@@ -14,7 +14,6 @@ For local development against a live source checkout, use `pip install -e .`
 first so the thirtytutors command runs against this tree directly.
 """
 
-import asyncio
 import mimetypes
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -23,8 +22,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import live_session, memory, quizzes, routes_api, routes_pages, speech_detection
-from .constants import ASSETS_DIR
+from . import live_session, memory, quizzes, routes_api, routes_pages
 from .profiles_store import migrate_legacy_model_name, migrate_legacy_profile_state
 
 # StaticFiles doesn't know the .mjs extension, so it serves ES modules as
@@ -65,7 +63,7 @@ async def _warm_up_speaker_models(app: FastAPI):
     migrate_legacy_model_name()
 
     # Kick off background model warmup
-    asyncio.create_task(asyncio.to_thread(speech_detection.warm_up))
+    # P0 is push-to-talk: no speaker model warmup or download.
 
     yield  # Hand control back to FastAPI so the server starts listening
 
@@ -140,41 +138,4 @@ async def favicon():
 # Pre-creating each directory (even empty) below means check_config()
 # always finds something to stat, so a still-missing individual file just
 # 404s normally and quietly instead.
-for _kind in ("avatar", "voices", "photos", "marketing"):
-    (ASSETS_DIR / _kind).mkdir(parents=True, exist_ok=True)
-
-app.mount(
-    "/avatar",
-    StaticFiles(directory=str(ASSETS_DIR / "avatar"), check_dir=False),
-    name="avatar_assets",
-)
-app.mount(
-    "/voices",
-    StaticFiles(directory=str(ASSETS_DIR / "voices"), check_dir=False),
-    name="voice_assets",
-)
-app.mount(
-    "/photos",
-    StaticFiles(directory=str(ASSETS_DIR / "photos"), check_dir=False),
-    name="photo_assets",
-)
-app.mount(
-    "/marketing",
-    StaticFiles(directory=str(ASSETS_DIR / "marketing"), check_dir=False),
-    name="marketing_assets",
-)
-avatar_test_dir = STATIC_DIR / "UI" / "avatar_test"
-if avatar_test_dir.exists():
-    app.mount(
-        "/avatar_test",
-        StaticFiles(directory=str(avatar_test_dir)),
-        name="avatar_test_assets",
-    )
-game_test_dir = STATIC_DIR / "UI" / "game_test"
-if game_test_dir.exists():
-    app.mount(
-        "/game_test",
-        StaticFiles(directory=str(game_test_dir)),
-        name="game_test_assets",
-    )
 app.mount("/", StaticFiles(directory=str(STATIC_DIR)), name="static")

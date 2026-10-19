@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Companion Lite</title><link rel="stylesheet" href="/companion.css"><script src="/companion.js" defer></script></head>
+<body><header><strong>Companion Lite</strong><span id="status" role="status" aria-live="polite">Chưa kết nối</span><button id="settingsButton">Cài đặt / Profile</button></header>
+<main><aside><h2>Hội thoại</h2><select id="profile" aria-label="Profile"></select><button id="newConversation">Cuộc trò chuyện mới</button><nav id="history" aria-label="Lịch sử"></nav></aside>
+<section class="voice"><p class="eyebrow">AI CONVERSATION COMPANION</p><h1>Một chút thời gian<br>để trò chuyện.</h1><canvas id="wave" width="640" height="100" aria-label="Sóng âm"></canvas>
+<p id="micStatus" aria-live="polite">Micro đang tắt</p><div class="controls"><button id="talk" class="mic" disabled>Giữ để nói</button><button id="stopAudio">Dừng âm thanh</button><button id="retry">Kết nối / Retry</button></div>
+<p>Giữ phím Space để nói · Escape để dừng âm thanh</p><label><input id="showTranscript" type="checkbox" checked> Hiện transcript</label><p class="muted">AI transcription; may be inaccurate</p><div id="transcript" role="log" aria-live="polite"></div></section></main>
+<dialog id="settings"><form id="settingsForm"><h2>Không gian của bạn</h2><p>Ứng dụng là AI. Transcript lưu trên máy; âm thanh và ngữ cảnh cần thiết được gửi đến Google Gemini khi kết nối. Không lưu raw audio mặc định.</p>
+<label>Tên / nickname<input id="nickname" required maxlength="40" autocomplete="off"></label>
+<label>Gemini API key<input id="apiKey" type="password" autocomplete="off" placeholder="Nhập key cho profile mới"></label>
+<label>Giọng Gemini<select id="voice"></select></label><p class="muted">Giọng tạo trên cloud, không cần WAV preview.</p>
+<label>Model<select id="model"></select></label><label>Trình độ<select id="difficulty"><option value="beginner">Beginner</option><option value="intermediate" selected>Intermediate</option><option value="advanced">Advanced</option></select></label>
+<label>Micro<select id="mic"><option value="">Micro mặc định</option></select></label><button id="devices" type="button">Cho phép và liệt kê micro</button>
+<button type="submit">Tạo profile và bắt đầu</button><button id="closeSettings" type="button">Đóng</button><p id="settingsError" role="alert"></p></form></dialog>
+<footer>PolyForm Noncommercial 1.0.0 · Required Notice: Copyright 2026 Wissam Metawee (<a href="https://github.com/wiss84/thirtytutors">upstream</a>)</footer>
+</body></html>

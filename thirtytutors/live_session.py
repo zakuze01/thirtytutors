@@ -135,7 +135,7 @@ from .constants import (
 from .profiles_store import get_client_for_key, get_profile_by_id, patch_profile
 from .summarization import summarize_conversation
 from .tutor_instructions import build_system_instruction
-from .tutor_tools import MOOD_TOOL, build_quiz_tool
+from .tutor_tools import build_quiz_tool
 
 router = APIRouter()
 
@@ -298,7 +298,7 @@ def build_config(
     kwargs = {
         "response_modalities": ["AUDIO"],
         "system_instruction": system_instruction,
-        "tools": [MOOD_TOOL, build_quiz_tool(native_language=native_language, target_language=target_language)],
+        "tools": [build_quiz_tool(native_language=native_language, target_language=target_language)],
         "input_audio_transcription": types.AudioTranscriptionConfig(),
         "output_audio_transcription": types.AudioTranscriptionConfig(),
         "speech_config": types.SpeechConfig(
@@ -1383,7 +1383,7 @@ async def ws_session(websocket: WebSocket):
                             # one, kept visible here in case the frequency ever
                             # becomes worth investigating further.
                             if sc and getattr(sc, "interrupted", False):
-                                print("[ws_session] server_content.interrupted=True (no client action - see comment)")
+                                await websocket.send_json({"type": "interrupted"})
 
                             if getattr(response, "data", None):
                                 await websocket.send_json(

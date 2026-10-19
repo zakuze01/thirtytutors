@@ -1,0 +1,17 @@
+INFO:     Started server process [6112]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:18749 (Press CTRL+C to quit)
+INFO:     127.0.0.1:59381 - "GET /landing?v=1792394791 HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:59381 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58513 - "GET /companion.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59381 - "GET /companion.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58513 - "GET /api/voices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59381 - "GET /api/models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50299 - "GET /api/profiles HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50299 - "GET /favicon.ico HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [6112]
+DESKTOP_SMOKE_RETURNED 12.27

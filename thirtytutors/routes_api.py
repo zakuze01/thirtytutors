@@ -22,7 +22,6 @@ from fastapi.responses import Response
 from . import backup, memory, quizzes, scenarios, speech_detection, stats, updater
 from .constants import (
     APP_VERSION,
-    ASSETS_DIR,
     DATA_DIR,
     DEFAULT_DIFFICULTY,
     DEFAULT_MIC_CALIBRATION_KEY,
@@ -99,25 +98,8 @@ def get_app_info():
         version = APP_VERSION
     return {
         "version": version,
-        "credits": ["Gemini Live API", "Resemblyzer", "TalkingHead"],
+        "credits": ["Gemini Live API", "Wissam Metawee"],
     }
-
-
-@router.get("/api/avatars")
-def get_available_avatars():
-    """Which voices currently have a real 3D avatar file, for the
-    avatar-select page to gate which grid tiles are clickable vs
-    "Coming soon" - avatars are being made one at a time, so this list
-    grows over time without any code change needed. Reads from ASSETS_DIR
-    (see constants.py), not the package's own bundled static/ - avatar
-    .glb files are downloaded separately (see cli.py), not shipped in the
-    pip package.
-    """
-    avatar_dir = ASSETS_DIR / "avatar"
-    if not avatar_dir.is_dir():
-        return {"available": []}
-    available = sorted(p.name[: -len("_th.glb")] for p in avatar_dir.glob("*_th.glb"))
-    return {"available": available}
 
 
 def _resolve_packaged_open_target(path: Path) -> tuple[str, dict]:
