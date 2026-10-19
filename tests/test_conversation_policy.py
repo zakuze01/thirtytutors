@@ -117,6 +117,13 @@ def test_slang_is_optional_bounded_and_does_not_assume_gender():
     assert "Chuẩn rồi fen!" not in prompt(ConversationPolicy(humor_style="gentle"))
 
 
+def test_uncertain_input_does_not_imply_a_third_language_request():
+    text = prompt(ConversationPolicy())
+    assert "do not translate the user's speech into a third language" in text
+    assert "ask briefly in Vietnamese for a repeat" in text
+    assert "do not infer that request from uncertain audio" in text
+
+
 @pytest.mark.parametrize("config", [{"humor_style": "insult"}, {"practice_style": "block_forever"}])
 def test_invalid_new_style_is_rejected(config):
     with pytest.raises(ValueError):

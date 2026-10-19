@@ -1,0 +1,69 @@
+Obtaining file:///C:/Users/PCLTC/Downloads/thirtytutors-baseline-audit
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: thirtytutors
+  Building editable for thirtytutors (pyproject.toml): started
+  Building editable for thirtytutors (pyproject.toml): finished with status 'done'
+  Created wheel for thirtytutors: filename=thirtytutors-1.2.1+companionlite.5-0.editable-py3-none-any.whl size=8217 sha256=77de5a8f841eae0b7cde756881078c6ca5b4e7db06423e17caab3a673d9d085a
+  Stored in directory: C:\Users\PCLTC\AppData\Local\Temp\pip-ephem-wheel-cache-jbtoz09x\wheels\d8\38\64\5bd80865b1adf999355a8a9f40089f068939e7652bfc2b95f9
+Successfully built thirtytutors
+Installing collected packages: thirtytutors
+  Attempting uninstall: thirtytutors
+    Found existing installation: thirtytutors 1.2.1+companionlite.4
+    Uninstalling thirtytutors-1.2.1+companionlite.4:
+      Successfully uninstalled thirtytutors-1.2.1+companionlite.4
+Successfully installed thirtytutors-1.2.1+companionlite.5
+
+[notice] A new release of pip is available: 25.1.1 -> 26.2.1
+[notice] To update, run: C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv-build\Scripts\python.exe -m pip install --upgrade pip
+C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv-build\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:82: SetuptoolsDeprecationWarning: `project.license` as a TOML table is deprecated
+!!
+
+        ********************************************************************************
+        Please use a simple string containing a SPDX expression for `project.license`. You can also use `project.license-files`. (Both options available on setuptools>=77.0.0).
+
+        By 2027-Feb-18, you need to update your project and remove deprecated calls
+        or your builds will no longer be supported.
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  corresp(dist, value, root_dir)
+C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv-build\Lib\site-packages\setuptools\config\_apply_pyprojecttoml.py:61: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+!!
+
+        ********************************************************************************
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+
+        License :: Other/Proprietary License
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  dist._finalize_license_expression()
+C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv-build\Lib\site-packages\setuptools\dist.py:765: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+!!
+
+        ********************************************************************************
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+
+        License :: Other/Proprietary License
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  self._finalize_license_expression()
+running egg_info
+writing thirtytutors.egg-info\PKG-INFO
+writing dependency_links to thirtytutors.egg-info\dependency_links.txt
+writing entry points to thirtytutors.egg-info\entry_points.txt
+writing requirements to thirtytutors.egg-info\requires.txt
+writing top-level names to thirtytutors.egg-info\top_level.txt
+reading manifest file 'thirtytutors.egg-info\SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file 'thirtytutors.egg-info\SOURCES.txt'

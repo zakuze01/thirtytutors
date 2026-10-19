@@ -26,9 +26,32 @@ test('speech includes pre-roll and survives a natural short pause',()=>{
   assert.equal(feed(gate,200,.08).filter(e=>e.start).length,1);
 });
 test('playback raises threshold but louder barge-in is accepted',()=>{
-  const gate=new Gate();
+  const gate=new Gate({threshold:.014});
   assert(feed(gate,400,.018,true).every(e=>!e.start));
   assert.equal(feed(gate,200,.08,true).filter(e=>e.start).length,1);
+});
+test('syllables with short unvoiced gaps still start a turn',()=>{
+  const gate=new Gate({threshold:.014});const events=[];
+  // 64 ms voice, 32 ms unvoiced, repeated: no continuous 120 ms segment.
+  for(let i=0;i<3;i++){events.push(...feed(gate,64,.025));events.push(...feed(gate,32,0));}
+  assert.equal(events.filter(e=>e.start).length,1);
+  assert.equal(feed(gate,900).filter(e=>e.end).length,1);
+});
+test('widely spaced clicks never accumulate into a speech turn',()=>{
+  const gate=new Gate();let starts=0;
+  for(let i=0;i<100;i++){starts+=feed(gate,16,.1).filter(e=>e.start).length;starts+=feed(gate,120).filter(e=>e.start).length;}
+  assert.equal(starts,0);assert(gate.onsetMs<=240);
+});
+test('new default admits a quiet signal previously below the threshold',()=>{
+  const quiet=feed(new Gate(),200,.009);
+  assert.equal(quiet.filter(e=>e.start).length,1);
+  assert(feed(new Gate({threshold:.014}),200,.009).every(e=>!e.start));
+});
+test('short syllable dips do not split an active turn',()=>{
+  const gate=new Gate();feed(gate,200,.02);
+  // Below start threshold, above the release threshold.
+  assert(feed(gate,1000,.005).every(e=>!e.end));
+  assert.equal(feed(gate,900).filter(e=>e.end).length,1);
 });
 test('continuous sound has a bounded maximum turn',()=>{
   const gate=new Gate({maxTurnMs:1000});

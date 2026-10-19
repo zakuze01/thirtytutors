@@ -2,6 +2,11 @@
 
 **V1 acceptance is INCOMPLETE. Private local QA preview only.**
 
+Preview 5 repairs quiet/fragmented speech onset and adds local microphone signal
+diagnostics: 298 Python tests and 9 Node tests pass, 76% coverage. Physical Realtek
+capture and incorrect-language transcription still require live validation. See
+`09_MICROPHONE_FIX_REPORT.md`.
+
 Preview 4 adds optional DeepSeek + Gemini voice and the reviewed banter examples:
 297 Python tests pass (76% coverage) and 5 Node PCM/VAD tests pass. The new path
 has synthetic HTTP/provider and mocked browser evidence; real-key cloud speech

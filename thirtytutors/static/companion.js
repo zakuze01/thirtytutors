@@ -11,6 +11,8 @@ let micAnalyser = null, playbackAnalyser = null, mutedUntilTurn = false;
 let activeTranscript = {}, reconnectDelay = 2000;
 let editingMemoryId = null;
 let voiceProvider = 'gemini_live';
+let lastMicMeter=0,micMeterEnergy=0,micMeterSamples=0;
+function updateMicMeter(samples){for(const value of samples)micMeterEnergy+=value*value;micMeterSamples+=samples.length;const now=performance.now();if(now-lastMicMeter<100)return;lastMicMeter=now;const rms=Math.sqrt(micMeterEnergy/Math.max(1,micMeterSamples));micMeterEnergy=0;micMeterSamples=0;$('micLevel').value=Math.min(1,rms/.1);const db=rms>0?Math.max(-96,Math.round(20*Math.log10(rms))): -96;$('micLevelText').textContent=`Mức mic: ${db} dBFS · ${speechActive?'Đang gửi lời nói':rms>=Number($('sensitivity').value)?'Có tín hiệu':'Chưa bắt tiếng · thử mức Nhạy nếu nói nhỏ'}`;}
 function selectedProvider(){return {voice_provider:$('voiceProvider').value,deepseek_model:$('deepseekModel').value,tts_model:$('ttsModel').value,transcription_model:'gemini-3.5-flash-lite'};}
 function providerControls(){const hybrid=$('voiceProvider').value==='deepseek_gemini';$('deepseekSettings').hidden=!hybrid;$('model').disabled=hybrid;$('providerNotice').textContent=hybrid?'Gemini nhận âm thanh; DeepSeek nhận transcript và ngữ cảnh bạn cho phép; Gemini nhận lời đáp để đọc. Hai key lưu riêng bằng mã hóa Windows.':'Gemini Live gửi âm thanh và ngữ cảnh được cho phép đến Google.';}
 $('voiceProvider').onchange=providerControls;
@@ -154,6 +156,8 @@ async function startRecording(handsFree=false) {
     input.connect(micAnalyser); input.connect(worklet);
     const silent = ctx.createGain(); silent.gain.value = 0; worklet.connect(silent); silent.connect(ctx.destination);
     capture = {stream, ctx, worklet}; recording = true;
+    $('micDevice').textContent='Đầu vào: '+(stream.getTracks()[0]?.label || $('mic').selectedOptions[0]?.textContent || 'Micro đã chọn');
+    lastMicMeter=0;micMeterEnergy=0;micMeterSamples=0;
     for(const track of stream.getTracks())track.onended=()=>{stopRecording();status('Micro đã ngắt · bật lại khi sẵn sàng.');};
     ctx.onstatechange=()=>{if(ctx.state==='suspended' && capture?.ctx===ctx){stopRecording();status('Micro tạm dừng · bật lại khi sẵn sàng.');}};
     voiceGate=continuous?new LocalSpeechGate({sampleRate:ctx.sampleRate,threshold:Number($('sensitivity').value)}):null;
@@ -161,6 +165,7 @@ async function startRecording(handsFree=false) {
     if(!continuous)beginSpeech();
     worklet.port.onmessage = event => {
       if(!recording || generation!==pressGeneration)return;
+      updateMicMeter(event.data);
       if(!connected || socket?.bufferedAmount>524288){stopRecording();status('Micro đã tắt · kết nối chậm, chọn Retry.');return;}
       if(!continuous){send({type:'audio_chunk',data:encodePCM(event.data)});return;}
       const result=voiceGate.push(event.data,sources.size>0);
@@ -177,11 +182,13 @@ async function startRecording(handsFree=false) {
     showError(new Error('Không mở được micro. Kiểm tra quyền micro trong Windows rồi thử lại.'));
   } finally { if (generation === pressGeneration) pendingPress = false; }
 }
-function stopRecording() {
+function stopRecording(reason='') {
   pendingPress = false; pressGeneration++;
   endSpeech();recording=false;continuous=false;voiceGate=null;
   if (capture) { capture.worklet.port.onmessage = null; capture.stream.getTracks().forEach(t=>t.stop()); capture.ctx.close().catch(()=>{}); capture = null; }
-  micAnalyser = null; $('talk').classList.remove('recording'); $('micStatus').textContent = 'Micro đang tắt';
+  micAnalyser = null; $('talk').classList.remove('recording'); $('micStatus').textContent = 'Micro đang tắt'+(typeof reason==='string' && reason?' · '+reason:'');
+  $('micLevel').value=0;$('micLevelText').textContent='Mức mic: chưa thu âm';$('micDevice').textContent='';
+  micMeterEnergy=0;micMeterSamples=0;
   captureControls();
 }
 async function playAudio(encoded) {
@@ -206,7 +213,7 @@ $('talk').addEventListener('pointerdown', e => {e.preventDefault(); $('talk').se
 for (const event of ['pointerup','pointercancel','lostpointercapture']) $('talk').addEventListener(event,()=>{if(!continuous)stopRecording();});
 $('listen').onclick=()=>{if(continuous || pendingPress)stopRecording();else{stopRecording();startRecording(true);}};
 $('sensitivity').onchange=()=>{if(voiceGate)voiceGate.threshold=Number($('sensitivity').value);};
-window.addEventListener('blur', stopRecording); window.addEventListener('beforeunload', disconnect);
+window.addEventListener('blur',()=>stopRecording('Bạn vừa chuyển cửa sổ; bấm Bật nghe liên tục để nghe lại')); window.addEventListener('beforeunload', disconnect);
 document.addEventListener('keydown', e => {if (e.code === 'Escape') {stopRecording();stopAudio();} if (e.code === 'Space' && !continuous && !e.repeat && (!$('settings').open && !$('memoryDialog').open) && (e.target===$('talk') || !['INPUT','TEXTAREA','SELECT','BUTTON'].includes(e.target.tagName))) {e.preventDefault();startRecording();}});
 document.addEventListener('keyup', e => {if (e.code === 'Space' && !continuous) stopRecording();});
 $('stopAudio').onclick = stopAudio; $('retry').onclick = connect;
