@@ -81,6 +81,18 @@ Automated regression and mocked browser results are recorded in `test-logs/previ
 Final regression: **297 passed, zero failed/skipped, 76% coverage, 42.32 s**;
 5 Node VAD tests pass. Ruff lint/format and JavaScript syntax checks pass.
 Hybrid provider module coverage is 94%. These figures do not imply live quality.
+
+Build source is `04b7fe987168c0e671778cd8bc03e8fa2d74e54f`, clean at manifest
+generation. PyInstaller and NSIS completed successfully on Windows 11 build 26100.
+The resulting installer is 34,073,435 bytes; its SHA-256 is
+`9a15b1c29d5ad8218ec667b21e3648fc02e47b13b60e9ef37913bd0cb3a33070`.
+The frozen EXE loaded the native UI in 4.457 seconds, reported micro off, and exited
+0 using isolated empty QA storage. Archive inspection confirms hybrid/provider/
+slang modules and HTTPX are bundled; frozen HTML/controller/gate hashes match
+tested source. Bundle credential-pattern and forbidden-asset scans pass.
+The installer is unsigned. This preview's installer was built, not installed over
+the owner's existing app; the earlier M5 install/uninstall evidence remains
+historical, not a fresh preview 4 installation test.
 Provider tests use synthetic keys and HTTPX MockTransport. They verify exact
 endpoint/header/model routing, transcription input, verbatim TTS input, WAV format,
 key migration/export/delete, HTTP failures, malformed/oversized responses, input

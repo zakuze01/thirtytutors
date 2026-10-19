@@ -1,0 +1,13 @@
+{
+  "frozen_modules": {
+    "thirtytutors.hybrid_session": true,
+    "thirtytutors.voice_providers": true,
+    "thirtytutors.friendly_slang": true,
+    "httpx": true
+  },
+  "static_matches": {
+    "companion.html": true,
+    "companion.js": true,
+    "speech-gate.js": true
+  }
+}
