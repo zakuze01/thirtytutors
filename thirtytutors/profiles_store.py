@@ -5,12 +5,25 @@ and live_session.py can share this without importing each other.
 
 import json
 import os
-import shutil
+import threading
+from functools import wraps
 
 from google import genai
 
-from . import memory
+from . import memory, secret_store
 from .constants import DATA_DIR, DEFAULT_MODEL, MODEL_OPTIONS, PROFILES_FILE
+from .privacy import private_log as print
+
+_PROFILE_LOCK = threading.RLock()
+
+
+def _locked(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        with _PROFILE_LOCK:
+            return fn(*args, **kwargs)
+
+    return wrapped
 
 
 def _backup_path():
@@ -42,19 +55,47 @@ def _read_profiles_json(path) -> list[dict] | None:
         return None
 
 
+@_locked
 def load_profiles() -> list[dict]:
     profiles = _read_profiles_json(PROFILES_FILE)
     if profiles is not None:
-        return profiles
+        return _hydrate_secrets(profiles)
     if PROFILES_FILE.exists():
         print("[profiles_store] profiles.json is corrupted or unreadable - trying profiles.json.bak")
     backup_profiles = _read_profiles_json(_backup_path())
     if backup_profiles is not None:
         print(f"[profiles_store] recovered {len(backup_profiles)} profile(s) from profiles.json.bak")
-        return backup_profiles
+        return _hydrate_secrets(backup_profiles)
     return []
 
 
+def _without_secrets(profiles):
+    return [{k: (None if k in secret_store.SECRET_FIELDS else v) for k, v in p.items()} for p in profiles]
+
+
+def _hydrate_secrets(profiles):
+    legacy_backup = _read_profiles_json(_backup_path()) or []
+    needs_migration = any(p.get(field) for p in profiles + legacy_backup for field in secret_store.SECRET_FIELDS)
+    if needs_migration:
+        # Snapshot before rewriting either legacy plaintext file. The rollback
+        # copy is itself DPAPI encrypted, never a plaintext backup/export.
+        for path in (PROFILES_FILE, _backup_path()):
+            snapshot = path.with_suffix(path.suffix + ".pre-secrets.dpapi")
+            if path.exists() and not snapshot.exists():
+                snapshot.write_bytes(secret_store.protect(path.read_bytes()))
+        for profile in profiles:
+            for field in secret_store.SECRET_FIELDS:
+                if field in profile and not profile[field]:
+                    profile[field] = secret_store.get(DATA_DIR, profile["id"], field)
+        save_profiles(profiles)
+    for profile in profiles:
+        for field in secret_store.SECRET_FIELDS:
+            if field in profile:
+                profile[field] = secret_store.get(DATA_DIR, profile["id"], field)
+    return profiles
+
+
+@_locked
 def save_profiles(profiles: list[dict]) -> None:
     """Writes profiles.json atomically: the new content is written to a
     temp file first, then swapped into place with os.replace(), which is
@@ -75,14 +116,20 @@ def save_profiles(profiles: list[dict]) -> None:
     being treated as zero profiles.
     """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    if _read_profiles_json(PROFILES_FILE) is not None:
-        try:
-            shutil.copy2(PROFILES_FILE, _backup_path())
-        except OSError as e:
-            print(f"[profiles_store] could not update profiles.json.bak: {type(e).__name__}: {e}")
+    for profile in profiles:
+        for field in secret_store.SECRET_FIELDS:
+            if field in profile:
+                secret_store.put(DATA_DIR, profile["id"], field, profile[field])
+    previous = _read_profiles_json(PROFILES_FILE)
+    if previous is not None:
+        _backup_path().write_text(json.dumps({"profiles": _without_secrets(previous)}, indent=2), encoding="utf-8")
+    else:
+        previous_backup = _read_profiles_json(_backup_path())
+        if previous_backup is not None:
+            _backup_path().write_text(json.dumps({"profiles": _without_secrets(previous_backup)}, indent=2), encoding="utf-8")
 
     tmp_path = PROFILES_FILE.with_suffix(".json.tmp")
-    tmp_path.write_text(json.dumps({"profiles": profiles}, indent=2), encoding="utf-8")
+    tmp_path.write_text(json.dumps({"profiles": _without_secrets(profiles)}, indent=2), encoding="utf-8")
     os.replace(tmp_path, PROFILES_FILE)
 
 
@@ -93,6 +140,7 @@ def get_profile_by_id(profile_id: str) -> dict | None:
     return None
 
 
+@_locked
 def patch_profile(profile_id: str, fields: dict) -> dict | None:
     profiles = load_profiles()
     for p in profiles:
@@ -103,16 +151,20 @@ def patch_profile(profile_id: str, fields: dict) -> dict | None:
     return None
 
 
+@_locked
 def delete_profile(profile_id: str) -> bool:
     profiles = load_profiles()
     for i, p in enumerate(profiles):
         if p["id"] == profile_id:
             profiles.pop(i)
             save_profiles(profiles)
+            for field in secret_store.SECRET_FIELDS:
+                secret_store.put(DATA_DIR, profile_id, field, None)
             return True
     return False
 
 
+@_locked
 def upsert_profile(profile: dict) -> None:
     """Replaces an existing profile entirely if its id already exists
     (import re-running over the same profile, or restoring a backup onto a

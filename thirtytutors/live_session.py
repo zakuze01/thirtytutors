@@ -107,7 +107,6 @@ import asyncio
 import base64
 import re
 import time
-import traceback
 from datetime import date
 
 import numpy as np
@@ -133,12 +132,23 @@ from .constants import (
     get_api_voice_name,
 )
 from .conversation_policy import ConversationPolicy
+from .privacy import private_log as print
 from .profiles_store import get_client_for_key, get_profile_by_id, patch_profile
 from .summarization import summarize_conversation
 from .tutor_instructions import build_system_instruction
 from .tutor_tools import build_quiz_tool
 
 router = APIRouter()
+ACTIVE_SOCKETS = {}
+
+
+async def close_profile_sessions(profile_id):
+    for connection in list(ACTIVE_SOCKETS.get(profile_id, set())):
+        try:
+            await connection.close(code=1000)
+        except RuntimeError:
+            pass
+
 
 # How many reconnects (go_away or a mid-session error) within
 # RAPID_RECONNECT_WINDOW_S of each other are tolerated before ws_session
@@ -747,7 +757,7 @@ def _connect_failure_payload(exc: Exception, fallback_message: str) -> dict:
             "kind": "rate_limit",
             "message": "You've hit the free-tier quota limit - try again in a bit.",
         }
-    return {"type": "error", "message": fallback_message}
+    return {"type": "error", "message": "Could not connect. Check the API key, model availability and network, then Retry."}
 
 
 def _refresh_conversation_memory_context(conv: dict, config_identity: dict) -> tuple:
@@ -798,6 +808,9 @@ def _refresh_conversation_memory_context(conv: dict, config_identity: dict) -> t
             f"{turn['role']}: {turn['text'][:400]}" for turn in recent
         )
         summary_text = (summary_text or "")[:1200] + tail
+    explicit = memory.list_memories(conv["profile_id"])[:8]
+    if explicit:
+        summary_text = (summary_text or "") + "\nUser-confirmed memory: " + str(explicit)[:1600]
     review_terms = memory.get_review_candidates(conv["id"])
     taught_vocab = memory.get_taught_vocab(conv["id"])
     return conv, resumption_handle, summary_text, review_terms, taught_vocab
@@ -905,9 +918,9 @@ async def ws_session(websocket: WebSocket):
         )
 
     observability.set_profile_keys(
-        profile.get("langfuse_public_key"),
-        profile.get("langfuse_secret_key"),
-        profile.get("langfuse_base_url"),
+        None,
+        None,
+        None,
     )
 
     try:
@@ -1004,6 +1017,9 @@ async def ws_session(websocket: WebSocket):
     # since only the elapsed duration matters, never an absolute timestamp,
     # and monotonic is immune to the system clock changing mid-session.
     session_start_monotonic = time.monotonic()
+    session_epoch = memory.privacy_epoch(profile["id"]) if profile.get("id") else 0
+    if profile.get("id"):
+        ACTIVE_SOCKETS.setdefault(profile["id"], set()).add(websocket)
 
     # Voice input is gated (see _VOICE_MESSAGE_TYPES) while quiz_state["active"]
     # is True - set either here (an unfinished quiz from an earlier app
@@ -1138,7 +1154,7 @@ async def ws_session(websocket: WebSocket):
         ) as gen:
             observability.update(gen, output=tutor_text or None)
 
-            if conv is None:
+            if conv is None or memory.privacy_epoch(profile["id"]) != session_epoch:
                 return
 
             if user_text.strip():
@@ -1193,10 +1209,8 @@ async def ws_session(websocket: WebSocket):
                             hf_similarity_threshold,
                         )
                     except Exception as e:  # noqa: BLE001
-                        import traceback
-
                         print(f"[handsfree] verification failed, forwarding unfiltered this window: {type(e).__name__}: {e}")
-                        traceback.print_exc()
+                        print("Provider operation failed")
                         result = None  # fail open - a model hiccup shouldn't silently break hands-free mode
 
                     if result is not None and not result[0]:
@@ -1693,7 +1707,7 @@ async def ws_session(websocket: WebSocket):
                     )
                 except Exception as reconnect_exc:  # noqa: BLE001
                     print(f"[ws_session] reconnect failed: {type(reconnect_exc).__name__}: {reconnect_exc}")
-                    traceback.print_exc()
+                    print("Provider operation failed")
                     try:
                         await websocket.send_json(
                             _connect_failure_payload(
@@ -1752,6 +1766,8 @@ async def ws_session(websocket: WebSocket):
                     print(f"[ws_session] send_json failed: {exc}")
                 break
     finally:
+        if profile.get("id"):
+            ACTIVE_SOCKETS.get(profile["id"], set()).discard(websocket)
         # sender.attach()/clear() calls throughout the loop above always ran
         # at least once by the time we reach here - this finally sits after
         # the while loop, which always runs its body at least once before

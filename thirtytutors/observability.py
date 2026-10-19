@@ -21,18 +21,15 @@ and always propagates normally - tracing problems and application
 problems are never allowed to look the same to a caller.
 """
 
-import os
 import sys
 from contextlib import contextmanager
 
-from dotenv import load_dotenv
-
-load_dotenv()
+from .privacy import private_log as print
 
 _profile_keys = {
-    "public_key": os.environ.get("LANGFUSE_PUBLIC_KEY"),
-    "secret_key": os.environ.get("LANGFUSE_SECRET_KEY"),
-    "base_url": os.environ.get("LANGFUSE_BASE_URL"),
+    "public_key": None,
+    "secret_key": None,
+    "base_url": None,
 }
 
 _client = None

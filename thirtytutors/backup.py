@@ -1,136 +1,127 @@
-"""Profile backup: packages one profile's profiles.json entry, its full
-conversation/quiz history, and its voice_enrollment folder into a single
-zip, and the reverse import. See memory.export_profile_conversations/
-import_profile_conversations and quizzes.export_conversation_quizzes/
-import_conversation_quizzes for the data-layer half of this - this module
-is just the zip packaging plus the automatic-backup scheduling check on
-top of it.
-
-Deliberately NOT a physical restructuring of how data is stored day-to-day
-(still one shared profiles.json / memory.db / voice_enrollment/, same as
-always) - this is an on-demand extraction, built fresh from those shared
-stores every time a backup runs.
-"""
+"""Portable local backups: no credentials, voice enrollment or raw audio."""
 
 import io
 import json
-import shutil
+import re
 import zipfile
 from datetime import UTC, datetime
 
-from . import memory
+from . import memory, profiles_store, secret_store
 from .constants import DATA_DIR
-from .profiles_store import get_profile_by_id, upsert_profile
-from .speech_detection.enrollment import profile_enrollment_dir
+from .profiles_store import delete_profile, get_profile_by_id, upsert_profile
+from .secret_store import SECRET_FIELDS, public_profile
 
-# Where an automatic backup is written - no folder-picker UI for this (no
-# native picker infrastructure exists elsewhere in the app yet, and this
-# keeps the feature to what's actually needed: a periodic local copy, not
-# a configurable destination). The Settings UI's "Open backups folder"
-# button reuses the same OS-file-explorer-open pattern as the existing
-# "Open data folder" button, so the location is still one click away.
 AUTO_BACKUP_DIR = DATA_DIR / "backups" / "auto"
 
-_MANIFEST_NAME = "manifest.json"
-_ENROLLMENT_PREFIX = "voice_enrollment/"
 
-
-def build_profile_backup_zip(profile_id: str) -> bytes:
-    """Builds the full backup zip in memory and returns its bytes:
-    manifest.json (the profile dict plus its nested conversations/quiz
-    sessions - already fully JSON-serializable, since profiles.json and
-    memory.export_profile_conversations's own output both already are)
-    plus a straight file-for-file copy of the profile's voice_enrollment
-    folder, if it has one. Used by both the manual Export button and
-    maybe_run_auto_backup below - one export path, not two to keep in
-    sync.
-
-    profile_state (total_seconds_studied/last_active_date/current_streak/
-    seen_milestones/last_auto_backup_at - see memory.py) lives in
-    memory.db, not profiles.json, so it's folded into the exported profile
-    dict explicitly here rather than already being part of `profile` -
-    otherwise a restored backup would silently lose the student's
-    streak/hours/milestone history even though everything else came back
-    intact.
-    """
+def build_profile_backup_zip(profile_id):
     profile = get_profile_by_id(profile_id)
     if profile is None:
-        raise ValueError(f"Profile {profile_id!r} not found.")
-
+        raise ValueError("Profile not found")
     manifest = {
-        "format_version": 1,
+        "format_version": 2,
         "exported_at": datetime.now(UTC).isoformat(),
-        "profile": {**profile, **memory.get_profile_state(profile_id)},
+        "profile": {**public_profile(profile), **memory.get_profile_state(profile_id)},
         "conversations": memory.export_profile_conversations(profile_id),
+        "memories": memory.list_memories(profile_id),
     }
-
+    serialized = json.dumps(manifest, indent=2)
+    for field in SECRET_FIELDS:
+        if profile.get(field):
+            serialized = serialized.replace(profile[field], "[redacted]")
     buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(_MANIFEST_NAME, json.dumps(manifest, indent=2))
-        enrollment_dir = profile_enrollment_dir(profile_id)
-        if enrollment_dir.exists():
-            for path in enrollment_dir.rglob("*"):
-                if path.is_file():
-                    zf.write(path, _ENROLLMENT_PREFIX + str(path.relative_to(enrollment_dir)))
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("manifest.json", serialized)
     return buf.getvalue()
 
 
-def import_profile_backup_zip(zip_bytes: bytes) -> str:
-    """Reverse of build_profile_backup_zip. Returns the imported profile's
-    id.
+def _read_manifest(data):
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        entries = archive.infolist()
+        if len(entries) > 2000 or sum(e.file_size for e in entries) > 64 * 1024 * 1024:
+            raise ValueError("Backup exceeds safety limits")
+        for entry in archive.namelist():
+            if entry.startswith(("/", "\\")) or ":" in entry or ".." in entry.replace("\\", "/").split("/"):
+                raise ValueError("Unsafe backup path")
+        manifest = json.loads(archive.read("manifest.json"))
+    if manifest.get("format_version") not in (1, 2):
+        raise ValueError("Unsupported backup format")
+    profile = manifest["profile"]
+    pid = profile["id"]
+    if not isinstance(pid, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", pid):
+        raise ValueError("Invalid profile namespace")
+    conversations = manifest.get("conversations", [])
+    if len({c["id"] for c in conversations}) != len(conversations):
+        raise ValueError("Duplicate conversation ids")
+    for conv in conversations:
+        existing = memory.get_conversation(conv["id"])
+        if existing and existing["profile_id"] != pid:
+            raise ValueError("Conversation belongs to another profile")
+        for key in ("id", "name", "config", "created_at", "updated_at"):
+            if key not in conv:
+                raise ValueError("Incomplete conversation")
+        if not isinstance(conv["config"], dict):
+            raise ValueError("Invalid conversation config")
+    for item in manifest.get("memories", []):
+        if (
+            item.get("domain") not in ("conversation", "learning")
+            or not isinstance(item.get("text"), str)
+            or not item["text"].strip()
+            or len(item["text"]) > 2000
+        ):
+            raise ValueError("Invalid memory")
+    return manifest
 
-    profiles.json entry is upserted - fully replaced if a profile with the
-    same id already exists locally, appended otherwise (see
-    profiles_store.upsert_profile). Conversations/quiz sessions are fully
-    replaced per-conversation (memory.import_profile_conversations already
-    deletes-then-reinserts, so importing the same backup twice never
-    duplicates rows). The voice_enrollment folder is copied into place
-    wholesale, overwriting any existing enrollment for that profile id
-    entirely rather than merging mic-by-mic - a restored backup should
-    behave identically to the machine it came from, not a partial mix of
-    old and new enrollment data.
 
-    The manifest's "profile" dict is the merged shape build_profile_backup_zip
-    produces (profiles.json fields plus profile_state fields folded
-    together) - the profile_state fields are popped back out here and
-    written to memory.db via memory.set_profile_state, so profiles.json
-    only ever receives its own fields. This also transparently upgrades a
-    backup made before profile_state existed as a separate table: an older
-    export's "profile" dict already carried these same field names
-    directly (they used to live in profiles.json), so the same pop/restore
-    logic still finds and migrates them correctly.
-    """
-    buf = io.BytesIO(zip_bytes)
-    with zipfile.ZipFile(buf, "r") as zf:
-        manifest = json.loads(zf.read(_MANIFEST_NAME))
-        profile = manifest["profile"]
-        profile_id = profile["id"]
-
-        state = {
-            "total_seconds_studied": profile.pop("total_seconds_studied", None),
-            "last_active_date": profile.pop("last_active_date", None),
-            "current_streak": profile.pop("current_streak", None),
-            "seen_milestones": profile.pop("seen_milestones", None),
-            "last_auto_backup_at": profile.pop("last_auto_backup_at", None),
+def import_profile_backup_zip(data):
+    manifest = _read_manifest(data)  # validate before changing profile/data
+    profile = dict(manifest["profile"])
+    pid = profile["id"]
+    old_profile = get_profile_by_id(pid)
+    old_state = memory.get_profile_state(pid)
+    old_conversations = memory.export_profile_conversations(pid)
+    old_memories = memory.list_memories(pid)
+    if old_profile:
+        snapshot = {
+            "format_version": 2,
+            "profile": {**old_profile, **old_state},
+            "conversations": old_conversations,
+            "memories": old_memories,
         }
-
-        upsert_profile(profile)
-        memory.set_profile_state(profile_id, state)
-        memory.import_profile_conversations(profile_id, manifest.get("conversations", []))
-
-        enrollment_names = [n for n in zf.namelist() if n.startswith(_ENROLLMENT_PREFIX) and not n.endswith("/")]
-        if enrollment_names:
-            dest_root = profile_enrollment_dir(profile_id)
-            if dest_root.exists():
-                shutil.rmtree(dest_root, ignore_errors=True)
-            dest_root.mkdir(parents=True, exist_ok=True)
-            for name in enrollment_names:
-                rel = name[len(_ENROLLMENT_PREFIX) :]
-                dest_path = dest_root / rel
-                dest_path.parent.mkdir(parents=True, exist_ok=True)
-                dest_path.write_bytes(zf.read(name))
-
-    return profile_id
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("manifest.json", json.dumps(snapshot))
+        recovery = profiles_store.DATA_DIR / "recovery"
+        recovery.mkdir(parents=True, exist_ok=True)
+        filename = datetime.now(UTC).strftime("%Y%m%d%H%M%S%f") + ".pre-import.dpapi"
+        (recovery / filename).write_bytes(secret_store.protect(buf.getvalue()))
+    for field in SECRET_FIELDS:
+        profile[field] = profile.get(field) or (old_profile or {}).get(field)
+    profile.pop("has_api_key", None)
+    state = {
+        key: profile.pop(key, None)
+        for key in ("total_seconds_studied", "last_active_date", "current_streak", "seen_milestones", "last_auto_backup_at")
+    }
+    try:
+        upsert_profile(profile)  # legacy plaintext keys go only to DPAPI
+        memory.set_profile_state(pid, state)
+        for item in manifest.get("memories", []):
+            memory.save_memory(pid, item["domain"], item["text"], item["id"])
+        memory.import_profile_conversations(pid, manifest.get("conversations", []))
+    except Exception:
+        # Multi-store rollback: in-memory snapshot has no persisted plaintext key.
+        memory.erase_profile_memory(pid)
+        for item in old_memories:
+            memory.save_memory(pid, item["domain"], item["text"], item["id"])
+        memory.import_profile_conversations(pid, old_conversations)
+        if old_profile is not None:
+            upsert_profile(old_profile)
+            memory.set_profile_state(pid, old_state)
+        else:
+            delete_profile(pid)
+            memory.delete_profile_state(pid)
+        raise ValueError("Backup restore failed; previous local data restored") from None
+    return pid
 
 
 def _safe_filename_part(name: str) -> str:

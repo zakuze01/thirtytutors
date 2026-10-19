@@ -1,0 +1,21 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-9.0.1, pluggy-1.6.0 -- C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, asyncio-1.4.0, cov-7.1.0, dash-3.3.0, mock-3.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 10 items
+
+tests/test_privacy.py::test_credentials_are_encrypted_and_excluded_from_exports PASSED [ 10%]
+tests/test_privacy.py::test_legacy_plaintext_migration_has_encrypted_rollback PASSED [ 20%]
+tests/test_privacy.py::test_failed_migration_preserves_legacy_file PASSED [ 30%]
+tests/test_privacy.py::test_archive_traversal_rejected_before_profile_changes PASSED [ 40%]
+tests/test_privacy.py::test_import_cannot_overwrite_another_profiles_conversation PASSED [ 50%]
+tests/test_privacy.py::test_full_forget_removes_transcript_summaries_learning_and_handles PASSED [ 60%]
+tests/test_privacy.py::test_late_summary_cannot_resurrect_forgotten_data PASSED [ 70%]
+tests/test_privacy.py::test_localhost_requires_launcher_and_same_origin PASSED [ 80%]
+tests/test_privacy.py::test_provider_errors_do_not_return_or_log_raw_credentials PASSED [ 90%]
+tests/test_privacy.py::test_bad_restore_rolls_back_profile_and_conversations PASSED [100%]
+
+============================= 10 passed in 3.70s ==============================

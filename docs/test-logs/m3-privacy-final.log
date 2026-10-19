@@ -1,0 +1,52 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-9.0.1, pluggy-1.6.0 -- C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, asyncio-1.4.0, cov-7.1.0, dash-3.3.0, mock-3.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 41 items
+
+tests/test_privacy.py::test_credentials_are_encrypted_and_excluded_from_exports PASSED [  2%]
+tests/test_privacy.py::test_legacy_plaintext_migration_has_encrypted_rollback PASSED [  4%]
+tests/test_privacy.py::test_failed_migration_preserves_legacy_file PASSED [  7%]
+tests/test_privacy.py::test_archive_traversal_rejected_before_profile_changes PASSED [  9%]
+tests/test_privacy.py::test_import_cannot_overwrite_another_profiles_conversation PASSED [ 12%]
+tests/test_privacy.py::test_full_forget_removes_transcript_summaries_learning_and_handles PASSED [ 14%]
+tests/test_privacy.py::test_late_summary_cannot_resurrect_forgotten_data PASSED [ 17%]
+tests/test_privacy.py::test_localhost_requires_launcher_and_same_origin PASSED [ 19%]
+tests/test_privacy.py::test_provider_errors_do_not_return_or_log_raw_credentials PASSED [ 21%]
+tests/test_privacy.py::test_bad_restore_rolls_back_profile_and_conversations PASSED [ 24%]
+tests/test_profile_backup.py::test_export_only_includes_this_profiles_conversations PASSED [ 26%]
+tests/test_profile_backup.py::test_export_of_profile_with_no_conversations_returns_empty_list PASSED [ 29%]
+tests/test_profile_backup.py::test_export_includes_every_nested_table PASSED [ 31%]
+tests/test_profile_backup.py::test_import_restores_a_fully_deleted_conversation PASSED [ 34%]
+tests/test_profile_backup.py::test_reimporting_the_same_export_does_not_duplicate_rows PASSED [ 36%]
+tests/test_profile_backup.py::test_import_overwrites_local_changes_made_after_export PASSED [ 39%]
+tests/test_profile_backup.py::test_import_does_not_touch_a_different_profiles_data PASSED [ 41%]
+tests/test_profile_backup.py::test_upsert_profile_appends_when_new PASSED [ 43%]
+tests/test_profile_backup.py::test_upsert_profile_replaces_when_id_already_exists PASSED [ 46%]
+tests/test_profile_backup.py::test_profile_enrollment_dir_round_trip_via_plain_copy PASSED [ 48%]
+tests/test_profiles_store.py::test_load_profiles_returns_empty_list_when_file_missing PASSED [ 51%]
+tests/test_profiles_store.py::test_save_then_load_round_trips PASSED     [ 53%]
+tests/test_profiles_store.py::test_load_profiles_returns_empty_list_on_corrupt_json PASSED [ 56%]
+tests/test_profiles_store.py::test_get_profile_by_id_found_and_missing PASSED [ 58%]
+tests/test_profiles_store.py::test_patch_profile_merges_fields_and_persists PASSED [ 60%]
+tests/test_profiles_store.py::test_patch_profile_returns_none_for_unknown_id PASSED [ 63%]
+tests/test_profiles_store.py::test_delete_profile_removes_only_that_profile PASSED [ 65%]
+tests/test_profiles_store.py::test_delete_profile_returns_false_for_unknown_id PASSED [ 68%]
+tests/test_profiles_store.py::test_save_profiles_leaves_old_file_untouched_if_interrupted_before_replace PASSED [ 70%]
+tests/test_profiles_store.py::test_load_profiles_recovers_from_backup_when_main_file_corrupted PASSED [ 73%]
+tests/test_profiles_store.py::test_backup_is_never_overwritten_with_already_corrupt_content PASSED [ 75%]
+tests/test_profiles_store.py::test_migrate_legacy_profile_state_moves_values_into_memory_db PASSED [ 78%]
+tests/test_profiles_store.py::test_migrate_legacy_profile_state_strips_legacy_fields_from_profiles_json PASSED [ 80%]
+tests/test_profiles_store.py::test_migrate_legacy_profile_state_is_idempotent_and_never_overwrites_newer_state PASSED [ 82%]
+tests/test_profiles_store.py::test_migrate_legacy_profile_state_skips_profiles_with_no_legacy_fields PASSED [ 85%]
+tests/test_profiles_store.py::test_migrate_legacy_profile_state_does_not_overwrite_an_already_migrated_row PASSED [ 87%]
+tests/test_profiles_store.py::test_migrate_legacy_model_name_updates_a_conversation_on_a_retired_model PASSED [ 90%]
+tests/test_profiles_store.py::test_migrate_legacy_model_name_leaves_a_currently_valid_model_untouched PASSED [ 92%]
+tests/test_profiles_store.py::test_migrate_legacy_model_name_leaves_a_conversation_with_no_model_name_untouched PASSED [ 95%]
+tests/test_profiles_store.py::test_get_client_for_key_raises_without_a_key PASSED [ 97%]
+tests/test_profiles_store.py::test_get_client_for_key_builds_a_client_given_a_key PASSED [100%]
+
+============================= 41 passed in 6.77s ==============================

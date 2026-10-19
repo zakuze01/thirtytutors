@@ -15,6 +15,8 @@ import time
 from collections.abc import Callable
 from typing import TypeVar
 
+from .privacy import private_log as print
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
@@ -127,7 +129,7 @@ def call_with_retry(
             if not is_transient_error(e) or attempt == max_retries:
                 raise
             delay = parse_retry_delay(str(e)) or (base_backoff * (2**attempt))
-            logger.warning(
+            print(
                 "[%s] attempt %d/%d failed (%s) - retrying in %.1fs",
                 label,
                 attempt + 1,

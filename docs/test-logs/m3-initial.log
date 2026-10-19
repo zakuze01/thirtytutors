@@ -1,0 +1,763 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-9.0.1, pluggy-1.6.0 -- C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, asyncio-1.4.0, cov-7.1.0, dash-3.3.0, mock-3.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 237 items
+
+tests/test_build_config.py::test_build_config_declares_quiz_without_avatar_mood_tool PASSED [  0%]
+tests/test_build_config.py::test_build_config_omits_spaced_repetition_block_without_review_terms PASSED [  0%]
+tests/test_build_config.py::test_build_config_includes_spaced_repetition_block_with_review_terms PASSED [  1%]
+tests/test_build_config.py::test_build_config_omits_spaced_repetition_block_with_empty_review_terms PASSED [  1%]
+tests/test_build_config.py::test_build_config_omits_taught_vocab_block_without_taught_vocab PASSED [  2%]
+tests/test_build_config.py::test_build_config_includes_taught_vocab_block_with_taught_vocab PASSED [  2%]
+tests/test_build_config.py::test_build_config_omits_taught_vocab_block_with_empty_taught_vocab PASSED [  2%]
+tests/test_build_config.py::test_quiz_tool_has_no_top_level_quiz_type PASSED [  3%]
+tests/test_build_config.py::test_quiz_tool_item_schema_requires_every_field PASSED [  3%]
+tests/test_build_config.py::test_quiz_tool_item_type_is_the_only_type_enum PASSED [  4%]
+tests/test_build_config.py::test_compute_quiz_type_uniform_multiple_choice PASSED [  4%]
+tests/test_build_config.py::test_compute_quiz_type_uniform_dragdrop PASSED [  5%]
+tests/test_build_config.py::test_compute_quiz_type_mixed PASSED          [  5%]
+tests/test_build_config.py::test_compute_quiz_type_empty_items_has_a_fallback PASSED [  5%]
+tests/test_build_config.py::test_validate_quiz_items_logs_blank_answer_count_mismatch FAILED [  6%]
+tests/test_build_config.py::test_validate_quiz_items_silent_when_counts_match PASSED [  6%]
+tests/test_build_config.py::test_validate_quiz_items_ignores_multiple_choice_items PASSED [  7%]
+tests/test_conversation_policy.py::test_default_is_friend_with_no_forced_lesson_or_drill PASSED [  7%]
+tests/test_conversation_policy.py::test_teacher_limits_corrections_and_requires_observed_evidence PASSED [  8%]
+tests/test_conversation_policy.py::test_bilingual_command_is_explicit_in_policy[gi\u1ea3i th\xedch b\u1eb1ng ti\u1ebfng Vi\u1ec7t] PASSED [  8%]
+tests/test_conversation_policy.py::test_bilingual_command_is_explicit_in_policy[ti\u1ebfp t\u1ee5c ti\u1ebfng Anh] PASSED [  8%]
+tests/test_conversation_policy.py::test_bilingual_command_is_explicit_in_policy[s\u1eeda c\xe2u v\u1eeba r\u1ed3i] PASSED [  9%]
+tests/test_conversation_policy.py::test_bilingual_command_is_explicit_in_policy[n\xf3i ch\u1eadm l\u1ea1i] PASSED [  9%]
+tests/test_conversation_policy.py::test_invalid_policy_is_rejected[mode-human] PASSED [ 10%]
+tests/test_conversation_policy.py::test_invalid_policy_is_rejected[difficulty-expert] PASSED [ 10%]
+tests/test_conversation_policy.py::test_invalid_policy_is_rejected[correction_intensity-always] PASSED [ 10%]
+tests/test_conversation_policy.py::test_invalid_policy_is_rejected[memory_policy-cloud] PASSED [ 11%]
+tests/test_conversation_policy.py::test_disabled_memory_is_not_in_prompt PASSED [ 11%]
+tests/test_conversation_policy.py::test_explicit_vietnamese_preference_and_no_translation_of_every_sentence PASSED [ 12%]
+tests/test_desktop.py::test_run_enables_downloads_opens_a_window_and_shuts_down_gracefully PASSED [ 12%]
+tests/test_desktop.py::test_shut_down_server_gracefully_signals_should_exit_and_joins_with_bound PASSED [ 13%]
+tests/test_desktop.py::test_shut_down_server_gracefully_gives_up_without_raising_if_thread_still_alive PASSED [ 13%]
+tests/test_desktop.py::test_build_uvicorn_server_passes_graceful_timeout_when_supported PASSED [ 13%]
+tests/test_desktop.py::test_build_uvicorn_server_falls_back_on_older_uvicorn_without_the_param PASSED [ 14%]
+tests/test_lite_runtime.py::test_p0_distribution_has_no_3d_vendor_or_heavy_requirement PASSED [ 14%]
+tests/test_lite_runtime.py::test_import_does_not_load_speaker_ml_stack PASSED [ 15%]
+tests/test_lite_runtime.py::test_startup_does_not_warm_up_speaker_model PASSED [ 15%]
+tests/test_lite_runtime.py::test_ui_and_voice_picker_work_without_external_assets PASSED [ 16%]
+tests/test_lite_runtime.py::test_upstream_install_and_download_paths_are_disabled PASSED [ 16%]
+tests/test_live_session_routing.py::test_policy_switch_mid_response_preserves_turns_and_clears_old_session PASSED [ 16%]
+tests/test_live_session_routing.py::test_normal_turn_flow_routes_messages_and_persists_transcript PASSED [ 17%]
+tests/test_live_session_routing.py::test_session_resumption_update_is_stored PASSED [ 17%]
+tests/test_live_session_routing.py::test_non_resumable_update_is_not_stored PASSED [ 18%]
+tests/test_live_session_routing.py::test_reconnect_resumes_when_config_unchanged PASSED [ 18%]
+tests/test_live_session_routing.py::test_init_must_be_the_first_message PASSED [ 18%]
+tests/test_live_session_routing.py::test_profile_with_no_conversations_errors_cleanly PASSED [ 19%]
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session PASSED [ 19%]
+tests/test_live_session_routing.py::test_missing_api_key_reports_friendly_error PASSED [ 20%]
+tests/test_live_session_routing.py::test_start_quiz_tool_call_forwards_to_browser PASSED [ 20%]
+tests/test_live_session_routing.py::test_duplicate_start_quiz_reuses_in_progress PASSED [ 21%]
+tests/test_live_session_routing.py::test_quiz_answer_persists_incrementally PASSED [ 21%]
+tests/test_live_session_routing.py::test_quiz_done_finalizes_and_injects_summary PASSED [ 21%]
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz PASSED [ 22%]
+tests/test_live_session_routing.py::test_quiz_skip_before_answering_injects_summary PASSED [ 22%]
+tests/test_live_session_routing.py::test_quiz_skip_after_partial_answers_reports_progress PASSED [ 23%]
+tests/test_live_session_routing.py::test_voice_input_gated_while_quiz_active PASSED [ 23%]
+tests/test_live_session_routing.py::test_go_away_reconnects_without_closing_browser_socket PASSED [ 24%]
+tests/test_live_session_routing.py::test_go_away_replay_excludes_audio_from_a_turn_that_already_completed PASSED [ 24%]
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying PASSED [ 24%]
+tests/test_live_session_routing.py::test_mid_response_drop_before_any_reply_still_replays_the_turn PASSED [ 25%]
+tests/test_live_session_routing.py::test_resumable_sender_indexes_every_send_including_unbuffered_ones PASSED [ 25%]
+tests/test_live_session_routing.py::test_resumable_sender_attach_resets_index_but_keeps_buffer PASSED [ 26%]
+tests/test_live_session_routing.py::test_resumable_sender_prune_drops_only_consumed_indices PASSED [ 26%]
+tests/test_live_session_routing.py::test_resumable_sender_prune_with_none_index_is_a_noop PASSED [ 27%]
+tests/test_live_session_routing.py::test_resumable_sender_clear_by_label_leaves_other_labels_alone PASSED [ 27%]
+tests/test_live_session_routing.py::test_resumable_sender_clear_all_when_label_is_none PASSED [ 27%]
+tests/test_live_session_routing.py::test_resumable_sender_replay_unconsumed_resends_in_order_and_rebuffers PASSED [ 28%]
+tests/test_live_session_routing.py::test_resumable_sender_replay_unconsumed_is_a_noop_when_buffer_empty PASSED [ 28%]
+tests/test_memory.py::test_default_conversation_name_with_voice PASSED   [ 29%]
+tests/test_memory.py::test_default_conversation_name_without_voice PASSED [ 29%]
+tests/test_memory.py::test_default_conversation_name_falls_back_to_conversation PASSED [ 29%]
+tests/test_memory.py::test_create_and_get_conversation PASSED            [ 30%]
+tests/test_memory.py::test_create_conversation_with_explicit_name PASSED [ 30%]
+tests/test_memory.py::test_get_conversation_returns_none_for_unknown_id PASSED [ 31%]
+tests/test_memory.py::test_list_conversations_scoped_to_profile_ordered_by_updated PASSED [ 31%]
+tests/test_memory.py::test_update_conversation_name_only PASSED          [ 32%]
+tests/test_memory.py::test_update_conversation_config_only PASSED        [ 32%]
+tests/test_memory.py::test_update_conversation_returns_none_for_unknown_id PASSED [ 32%]
+tests/test_memory.py::test_delete_conversation_removes_everything PASSED [ 33%]
+tests/test_memory.py::test_delete_conversation_returns_false_for_unknown_id PASSED [ 33%]
+tests/test_memory.py::test_insert_turn_increments_seq_and_updates_conversation_timestamp PASSED [ 34%]
+tests/test_memory.py::test_insert_turn_skips_blank_text PASSED           [ 34%]
+tests/test_memory.py::test_get_turns_since_seq_only_returns_newer_rows PASSED [ 35%]
+tests/test_memory.py::test_summary_upsert_and_get PASSED                 [ 35%]
+tests/test_memory.py::test_upsert_vocab_mistake_creates_then_bumps_occurrences PASSED [ 35%]
+tests/test_memory.py::test_upsert_vocab_mistake_is_case_insensitive PASSED [ 36%]
+tests/test_memory.py::test_upsert_vocab_mistake_ignores_blank_term PASSED [ 36%]
+tests/test_memory.py::test_record_term_review_correct_for_unknown_term_is_a_noop PASSED [ 37%]
+tests/test_memory.py::test_record_term_review_incorrect_creates_row_like_upsert_vocab_mistake PASSED [ 37%]
+tests/test_memory.py::test_missed_term_appears_in_review_candidates PASSED [ 37%]
+tests/test_memory.py::test_review_candidates_ordered_by_occurrences_then_recency PASSED [ 38%]
+tests/test_memory.py::test_two_correct_streaks_retires_term_from_review_candidates PASSED [ 38%]
+tests/test_memory.py::test_incorrect_after_streak_resets_it_and_reappears PASSED [ 39%]
+tests/test_memory.py::test_review_candidates_respects_limit PASSED       [ 39%]
+tests/test_memory.py::test_taught_vocab_independent_of_review_streak PASSED [ 40%]
+tests/test_memory.py::test_taught_vocab_most_recent_first PASSED         [ 40%]
+tests/test_memory.py::test_taught_vocab_respects_limit PASSED            [ 40%]
+tests/test_memory.py::test_taught_vocab_empty_for_conversation_with_no_vocab PASSED [ 41%]
+tests/test_memory.py::test_taught_vocab_scoped_to_conversation PASSED    [ 41%]
+tests/test_memory.py::test_init_db_migration_is_idempotent PASSED        [ 42%]
+tests/test_memory.py::test_append_and_get_lesson_log PASSED              [ 42%]
+tests/test_memory.py::test_append_lesson_log_ignores_blank_note PASSED   [ 43%]
+tests/test_memory.py::test_get_profile_state_returns_defaults_for_unknown_profile PASSED [ 43%]
+tests/test_memory.py::test_record_active_day_first_ever_day_starts_streak_at_one PASSED [ 43%]
+tests/test_memory.py::test_record_active_day_same_day_is_a_noop PASSED   [ 44%]
+tests/test_memory.py::test_record_active_day_consecutive_day_extends_streak PASSED [ 44%]
+tests/test_memory.py::test_record_active_day_gap_resets_streak_to_one PASSED [ 45%]
+tests/test_memory.py::test_add_seconds_studied_accumulates_across_calls PASSED [ 45%]
+tests/test_memory.py::test_add_seconds_studied_ignores_zero_or_negative PASSED [ 45%]
+tests/test_memory.py::test_add_seen_milestones_unions_across_calls PASSED [ 46%]
+tests/test_memory.py::test_set_last_auto_backup_at_persists PASSED       [ 46%]
+tests/test_memory.py::test_set_profile_state_fully_replaces_existing_row PASSED [ 47%]
+tests/test_memory.py::test_delete_profile_state_removes_the_row PASSED   [ 47%]
+tests/test_memory.py::test_profile_state_scoped_to_profile PASSED        [ 48%]
+tests/test_observability.py::test_is_enabled_false_without_keys PASSED   [ 48%]
+tests/test_observability.py::test_is_enabled_true_with_both_keys PASSED  [ 48%]
+tests/test_observability.py::test_span_noop_when_disabled PASSED         [ 49%]
+tests/test_observability.py::test_span_yields_the_observation_object PASSED [ 49%]
+tests/test_observability.py::test_span_passes_input_metadata_model_through PASSED [ 50%]
+tests/test_observability.py::test_span_omits_none_kwargs PASSED          [ 50%]
+tests/test_observability.py::test_span_propagates_caller_exceptions PASSED [ 51%]
+tests/test_observability.py::test_span_propagates_caller_exceptions_when_disabled PASSED [ 51%]
+tests/test_observability.py::test_span_disables_tracing_when_start_fails PASSED [ 51%]
+tests/test_observability.py::test_span_disables_tracing_when_exit_fails_but_body_still_runs PASSED [ 52%]
+tests/test_observability.py::test_get_client_short_circuits_once_broken PASSED [ 52%]
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation PASSED [ 53%]
+tests/test_observability.py::test_update_is_a_noop_for_none PASSED       [ 53%]
+tests/test_observability.py::test_update_calls_observation_update PASSED [ 54%]
+tests/test_observability.py::test_update_disables_tracing_on_failure PASSED [ 54%]
+tests/test_profile_backup.py::test_export_only_includes_this_profiles_conversations PASSED [ 54%]
+tests/test_profile_backup.py::test_export_of_profile_with_no_conversations_returns_empty_list PASSED [ 55%]
+tests/test_profile_backup.py::test_export_includes_every_nested_table PASSED [ 55%]
+tests/test_profile_backup.py::test_import_restores_a_fully_deleted_conversation PASSED [ 56%]
+tests/test_profile_backup.py::test_reimporting_the_same_export_does_not_duplicate_rows PASSED [ 56%]
+tests/test_profile_backup.py::test_import_overwrites_local_changes_made_after_export PASSED [ 56%]
+tests/test_profile_backup.py::test_import_does_not_touch_a_different_profiles_data PASSED [ 57%]
+tests/test_profile_backup.py::test_upsert_profile_appends_when_new PASSED [ 57%]
+tests/test_profile_backup.py::test_upsert_profile_replaces_when_id_already_exists PASSED [ 58%]
+tests/test_profile_backup.py::test_profile_enrollment_dir_round_trip_via_plain_copy PASSED [ 58%]
+tests/test_profiles_store.py::test_load_profiles_returns_empty_list_when_file_missing PASSED [ 59%]
+tests/test_profiles_store.py::test_save_then_load_round_trips PASSED     [ 59%]
+tests/test_profiles_store.py::test_load_profiles_returns_empty_list_on_corrupt_json PASSED [ 59%]
+tests/test_profiles_store.py::test_get_profile_by_id_found_and_missing PASSED [ 60%]
+tests/test_profiles_store.py::test_patch_profile_merges_fields_and_persists PASSED [ 60%]
+tests/test_profiles_store.py::test_patch_profile_returns_none_for_unknown_id PASSED [ 61%]
+tests/test_profiles_store.py::test_delete_profile_removes_only_that_profile PASSED [ 61%]
+tests/test_profiles_store.py::test_delete_profile_returns_false_for_unknown_id PASSED [ 62%]
+tests/test_profiles_store.py::test_save_profiles_leaves_old_file_untouched_if_interrupted_before_replace PASSED [ 62%]
+tests/test_profiles_store.py::test_load_profiles_recovers_from_backup_when_main_file_corrupted PASSED [ 62%]
+tests/test_profiles_store.py::test_backup_is_never_overwritten_with_already_corrupt_content PASSED [ 63%]
+tests/test_profiles_store.py::test_migrate_legacy_profile_state_moves_values_into_memory_db PASSED [ 63%]
+tests/test_profiles_store.py::test_migrate_legacy_profile_state_strips_legacy_fields_from_profiles_json PASSED [ 64%]
+tests/test_profiles_store.py::test_migrate_legacy_profile_state_is_idempotent_and_never_overwrites_newer_state PASSED [ 64%]
+tests/test_profiles_store.py::test_migrate_legacy_profile_state_skips_profiles_with_no_legacy_fields PASSED [ 64%]
+tests/test_profiles_store.py::test_migrate_legacy_profile_state_does_not_overwrite_an_already_migrated_row PASSED [ 65%]
+tests/test_profiles_store.py::test_migrate_legacy_model_name_updates_a_conversation_on_a_retired_model PASSED [ 65%]
+tests/test_profiles_store.py::test_migrate_legacy_model_name_leaves_a_currently_valid_model_untouched PASSED [ 66%]
+tests/test_profiles_store.py::test_migrate_legacy_model_name_leaves_a_conversation_with_no_model_name_untouched PASSED [ 66%]
+tests/test_profiles_store.py::test_get_client_for_key_raises_without_a_key PASSED [ 67%]
+tests/test_profiles_store.py::test_get_client_for_key_builds_a_client_given_a_key PASSED [ 67%]
+tests/test_quizzes.py::test_start_quiz_session_creates_in_progress_row_with_payload_verbatim PASSED [ 67%]
+tests/test_quizzes.py::test_record_item_answer_inserts_row_and_advances_progress PASSED [ 68%]
+tests/test_quizzes.py::test_record_item_answer_feeds_record_term_review PASSED [ 68%]
+tests/test_quizzes.py::test_unfinished_quiz_stays_in_progress_with_partial_answers_recorded PASSED [ 69%]
+tests/test_quizzes.py::test_finalize_quiz_session_flips_status_and_drops_out_of_in_progress PASSED [ 69%]
+tests/test_quizzes.py::test_finalize_quiz_session_supports_skipped_status PASSED [ 70%]
+tests/test_quizzes.py::test_get_in_progress_quiz_returns_none_when_nothing_in_progress PASSED [ 70%]
+tests/test_quizzes.py::test_get_in_progress_quiz_ignores_finalized_sessions PASSED [ 70%]
+tests/test_quizzes.py::test_get_in_progress_quiz_scoped_to_conversation PASSED [ 71%]
+tests/test_quizzes.py::test_get_quiz_sessions_and_items_round_trip PASSED [ 71%]
+tests/test_quizzes.py::test_delete_conversation_removes_quiz_rows PASSED [ 72%]
+tests/test_retry.py::test_server_error_is_always_transient PASSED        [ 72%]
+tests/test_retry.py::test_transient_keyword_markers[500 INTERNAL] PASSED [ 72%]
+tests/test_retry.py::test_transient_keyword_markers[503 UNAVAILABLE] PASSED [ 73%]
+tests/test_retry.py::test_transient_keyword_markers[429 RESOURCE_EXHAUSTED] PASSED [ 73%]
+tests/test_retry.py::test_transient_keyword_markers[some text mentioning internal error] PASSED [ 74%]
+tests/test_retry.py::test_non_transient_errors_are_not_retried[400 Bad Request] PASSED [ 74%]
+tests/test_retry.py::test_non_transient_errors_are_not_retried[401 Unauthorized] PASSED [ 75%]
+tests/test_retry.py::test_non_transient_errors_are_not_retried[404 model not found] PASSED [ 75%]
+tests/test_retry.py::test_os_error_subclasses_are_network_errors PASSED  [ 75%]
+tests/test_retry.py::test_api_errors_are_not_network_errors PASSED       [ 76%]
+tests/test_retry.py::test_rate_limit_markers[429 Too Many Requests] PASSED [ 76%]
+tests/test_retry.py::test_rate_limit_markers[RESOURCE_EXHAUSTED: quota] PASSED [ 77%]
+tests/test_retry.py::test_non_rate_limit_error_is_not_flagged PASSED     [ 77%]
+tests/test_retry.py::test_parse_retry_delay_extracts_seconds_plus_margin PASSED [ 78%]
+tests/test_retry.py::test_parse_retry_delay_returns_none_when_absent PASSED [ 78%]
+tests/test_retry.py::test_call_with_retry_returns_on_first_success PASSED [ 78%]
+tests/test_retry.py::test_call_with_retry_retries_transient_then_succeeds PASSED [ 79%]
+tests/test_retry.py::test_call_with_retry_raises_immediately_on_non_transient PASSED [ 79%]
+tests/test_retry.py::test_call_with_retry_raises_last_error_once_exhausted PASSED [ 80%]
+tests/test_routes_api.py::test_reference_data_endpoints_return_expected_shape PASSED [ 80%]
+tests/test_routes_api.py::test_languages_endpoint_returns_a_sorted_list_of_unique_names PASSED [ 81%]
+tests/test_routes_api.py::test_create_profile_requires_a_name PASSED     [ 81%]
+tests/test_routes_api.py::test_create_profile_returns_full_profile_with_defaults PASSED [ 81%]
+tests/test_routes_api.py::test_list_profiles_returns_id_and_name_only PASSED [ 82%]
+tests/test_routes_api.py::test_get_profile_404_for_unknown_id PASSED     [ 82%]
+tests/test_routes_api.py::test_update_profile_only_touches_editable_fields PASSED [ 83%]
+tests/test_routes_api.py::test_update_profile_404_for_unknown_id PASSED  [ 83%]
+tests/test_routes_api.py::test_delete_profile_cascades_conversations_and_enrollment PASSED [ 83%]
+tests/test_routes_api.py::test_delete_profile_404_for_unknown_id PASSED  [ 84%]
+tests/test_routes_api.py::test_mic_status_reflects_calibration_and_enrollment PASSED [ 84%]
+tests/test_routes_api.py::test_voice_enrollment_full_round_trip PASSED   [ 85%]
+tests/test_routes_api.py::test_voice_enrollment_requires_at_least_one_sample PASSED [ 85%]
+tests/test_routes_api.py::test_voice_enrollment_test_requires_prior_enrollment PASSED [ 86%]
+tests/test_routes_api.py::test_voice_enrollment_test_scores_against_reference PASSED [ 86%]
+tests/test_routes_api.py::test_create_conversation_falls_back_to_profile_defaults PASSED [ 86%]
+tests/test_routes_api.py::test_create_conversation_404_for_unknown_profile PASSED [ 87%]
+tests/test_routes_api.py::test_list_conversations_includes_active_conversation_id PASSED [ 87%]
+tests/test_routes_api.py::test_get_conversation_includes_turns_summary_and_tutor_name PASSED [ 88%]
+tests/test_routes_api.py::test_get_conversation_404_when_profile_mismatched PASSED [ 88%]
+tests/test_routes_api.py::test_update_conversation_difficulty PASSED     [ 89%]
+tests/test_routes_api.py::test_delete_conversation_reassigns_active_conversation PASSED [ 89%]
+tests/test_routes_api.py::test_delete_last_conversation_clears_active_conversation PASSED [ 89%]
+tests/test_routes_api.py::test_set_active_conversation_rejects_mismatched_profile PASSED [ 90%]
+tests/test_routes_api.py::test_notes_endpoint_reflects_vocab_and_lesson_log PASSED [ 90%]
+tests/test_routes_api.py::test_export_docx_returns_a_word_document PASSED [ 91%]
+tests/test_routes_api.py::test_export_docx_404_for_unknown_conversation PASSED [ 91%]
+tests/test_speech_detection.py::test_trim_silence_returns_short_arrays_unchanged PASSED [ 91%]
+tests/test_speech_detection.py::test_trim_silence_returns_all_silence_unchanged PASSED [ 92%]
+tests/test_speech_detection.py::test_trim_silence_crops_around_active_region_with_padding PASSED [ 92%]
+tests/test_speech_detection.py::test_cosine_similarity_identical_vectors_is_one PASSED [ 93%]
+tests/test_speech_detection.py::test_cosine_similarity_orthogonal_vectors_is_zero PASSED [ 93%]
+tests/test_speech_detection.py::test_cosine_similarity_zero_vector_is_zero_not_nan PASSED [ 94%]
+tests/test_speech_detection.py::test_cosine_similarity_shape_mismatch_raises PASSED [ 94%]
+tests/test_speech_detection.py::test_pcm16_bytes_to_float32_round_trip PASSED [ 94%]
+tests/test_speech_detection.py::test_has_enrollment_false_before_enrolling PASSED [ 95%]
+tests/test_speech_detection.py::test_enroll_then_verify_same_audio_scores_high PASSED [ 95%]
+tests/test_speech_detection.py::test_verify_returns_none_without_enrollment PASSED [ 96%]
+tests/test_speech_detection.py::test_verify_fails_below_threshold PASSED [ 96%]
+tests/test_speech_detection.py::test_enrollment_is_scoped_per_mic PASSED [ 97%]
+tests/test_speech_detection.py::test_load_reference_rejects_mismatched_backend_tag PASSED [ 97%]
+tests/test_speech_detection.py::test_delete_enrollment_specific_mic_leaves_others_intact PASSED [ 97%]
+tests/test_speech_detection.py::test_delete_enrollment_all_mics_when_mic_key_omitted PASSED [ 98%]
+tests/test_speech_detection.py::test_enroll_profile_requires_at_least_one_sample PASSED [ 98%]
+tests/test_tutor_tools.py::test_build_quiz_tool_does_not_raise_for_various_languages PASSED [ 99%]
+tests/test_tutor_tools.py::test_build_quiz_tool_item_schema_has_every_required_field PASSED [ 99%]
+tests/test_tutor_tools.py::test_build_quiz_tool_interpolates_the_given_languages PASSED [100%]
+
+================================== FAILURES ===================================
+__________ test_validate_quiz_items_logs_blank_answer_count_mismatch __________
+
+capsys = <_pytest.capture.CaptureFixture object at 0x00000172CA652120>
+
+    def test_validate_quiz_items_logs_blank_answer_count_mismatch(capsys):
+        live_session._validate_quiz_items(
+            [{"item_type": "fill_blank_dragdrop", "text_with_blanks": "{0} {1}", "correct_answers": ["only one"]}]
+        )
+>       assert "mismatch" in capsys.readouterr().out
+E       AssertionError: assert 'mismatch' in ''
+E        +  where '' = CaptureResult(out='', err='').out
+E        +    where CaptureResult(out='', err='') = readouterr()
+E        +      where readouterr = <_pytest.capture.CaptureFixture object at 0x00000172CA652120>.readouterr
+
+tests\test_build_config.py:182: AssertionError
+============================== warnings summary ===============================
+tests/test_live_session_routing.py::test_session_resumption_update_is_stored
+  C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Lib\site-packages\anyio\_core\_tasks.py:302: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F1120>
+    def __init__(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_session_resumption_update_is_stored
+  C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Lib\site-packages\anyio\_core\_tasks.py:302: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F0F40>
+    def __init__(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_session_resumption_update_is_stored
+  C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Lib\site-packages\anyio\_core\_tasks.py:302: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F1990>
+    def __init__(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_session_resumption_update_is_stored
+  C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Lib\site-packages\anyio\_core\_tasks.py:302: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F1A80>
+    def __init__(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_session_resumption_update_is_stored
+  C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Lib\site-packages\anyio\_core\_tasks.py:302: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F23E0>
+    def __init__(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_session_resumption_update_is_stored
+  C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Lib\site-packages\anyio\_core\_tasks.py:302: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F07C0>
+    def __init__(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_session_resumption_update_is_stored
+  C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Lib\site-packages\anyio\_core\_tasks.py:302: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F14E0>
+    def __init__(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_session_resumption_update_is_stored
+  C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Lib\site-packages\anyio\_core\_tasks.py:302: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F2020>
+    def __init__(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_session_resumption_update_is_stored
+  C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Lib\site-packages\anyio\_core\_tasks.py:302: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F13F0>
+    def __init__(
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74FB50>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172C5E614E0>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74FA60>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172C5E61A80>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8294E0>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA82AC50>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA82B100>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA82AB60>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA82AF20>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA82A5C0>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA82B2E0>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_unknown_profile_id_falls_back_to_ephemeral_session
+  <frozen abc>:123: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8286D0>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8295D0>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F15D0>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F0D60>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F1B70>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F1300>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F0220>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F0A90>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F08B0>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F26B0>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F1C60>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F0400>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F2D40>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F27A0>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F1F30>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F2B60>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F05E0>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F31F0>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F2980>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F3010>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F2110>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_reconnect_resumes_in_progress_quiz
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:2060: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F2200>
+    def get_debug(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74EA70>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA82B970>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74E3E0>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA828040>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74EE30>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74E2F0>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F1E40>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74FE20>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74F1F0>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74E980>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74E4D0>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74D7B0>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F04F0>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA74F880>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F09A0>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F34C0>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F35B0>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F0C70>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F1210>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F3790>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F2F20>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F2A70>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_live_session_routing.py::test_mid_response_drop_discards_buffered_audio_instead_of_replaying
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\_weakrefset.py:77: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F1D50>
+    wr = ref(item)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation
+  <frozen importlib._bootstrap_external>:784: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA82AE30>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation
+  <frozen importlib._bootstrap_external>:784: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8285E0>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation
+  <frozen importlib._bootstrap_external>:784: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8289A0>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation
+  <frozen importlib._bootstrap_external>:784: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F0B80>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation
+  <frozen importlib._bootstrap_external>:784: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA82BE20>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation
+  <frozen importlib._bootstrap_external>:784: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA829D50>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation
+  <frozen importlib._bootstrap_external>:784: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F22F0>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation
+  <frozen importlib._bootstrap_external>:784: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F3C40>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation
+  <frozen importlib._bootstrap_external>:784: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F36A0>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation
+  <frozen importlib._bootstrap_external>:784: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA9F4D60>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_observability.py::test_span_handles_missing_langfuse_package_for_attribute_propagation
+  <frozen importlib._bootstrap_external>:784: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CA8F3970>
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_routes_api.py::test_delete_profile_cascades_conversations_and_enrollment
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:554: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CC1D0040>
+    def _check_closed(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_routes_api.py::test_delete_profile_cascades_conversations_and_enrollment
+  C:\Users\PCLTC\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py:554: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CC1D0220>
+    def _check_closed(self):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_routes_api.py::test_mic_status_reflects_calibration_and_enrollment
+  C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Lib\site-packages\fastapi\dependencies\models.py:223: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CC0BF2E0>
+    def _is_coroutine_callable(call: Callable[..., Any] | None) -> bool:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_routes_api.py::test_mic_status_reflects_calibration_and_enrollment
+  C:\Users\PCLTC\Downloads\thirtytutors-baseline-audit\.venv\Lib\site-packages\fastapi\dependencies\models.py:223: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x00000172CC0BD3F0>
+    def _is_coroutine_callable(call: Callable[..., Any] | None) -> bool:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.4-final-0 _______________
+
+Name                                                   Stmts   Miss  Cover   Missing
+------------------------------------------------------------------------------------
+thirtytutors\__init__.py                                   0      0   100%
+thirtytutors\__main__.py                                   1      1     0%   7
+thirtytutors\backup.py                                    93     75    19%   58-78, 106-160, 164-165, 185-205
+thirtytutors\constants.py                                 45      9    80%   319-327
+thirtytutors\conversation_policy.py                       25      0   100%
+thirtytutors\desktop.py                                   50      7    86%   104-108, 184, 188
+thirtytutors\desktop_entry.py                              8      8     0%   30-40
+thirtytutors\export_docx.py                               47     11    77%   19, 27, 29-30, 49, 57, 67-71
+thirtytutors\languages.py                                  1      0   100%
+thirtytutors\live_session.py                             693    202    71%   147-150, 242-244, 341-342, 346-353, 357-367, 414-426, 591-593, 673-707, 719-721, 748-760, 796, 813, 845-846, 862, 937-938, 949-950, 973-983, 994, 1007-1008, 1045-1046, 1168, 1187-1226, 1241-1243, 1265-1266, 1268-1274, 1276-1284, 1318-1319, 1344-1345, 1348-1356, 1374-1390, 1399-1400, 1427, 1430, 1455-1463, 1570, 1574, 1586, 1591-1605, 1678-1679, 1708-1722, 1740-1744, 1756-1757, 1759-1767, 1799-1801, 1818-1819, 1822-1823, 1826-1827
+thirtytutors\local_access.py                              42      9    79%   17, 27-28, 37-43
+thirtytutors\main.py                                      37      1    97%   125
+thirtytutors\memory.py                                   342     19    94%   151, 236-237, 275, 614, 789, 870-882, 908-910
+thirtytutors\observability.py                             91     22    76%   70-84, 123-125, 141-144, 157-158, 169-170
+thirtytutors\privacy.py                                    2      0   100%
+thirtytutors\profiles_store.py                           121      6    95%   66-70, 201
+thirtytutors\quizzes.py                                  169     48    72%   277-280, 288-302, 323-358
+thirtytutors\retry.py                                     36      1    97%   141
+thirtytutors\routes_api.py                               466    196    58%   115-159, 167-175, 185-193, 214-225, 235-239, 249-254, 267-272, 283, 296-298, 308, 313-316, 410, 418-420, 425-433, 438-440, 445-450, 470-480, 490-496, 505-508, 520-525, 541-543, 556, 577, 589, 605, 609, 626-627, 634, 644, 660, 665, 671, 679-680, 691, 714-715, 746, 751, 783, 800, 857-860, 865-869, 874-884, 889-900, 905-909, 916, 922-923
+thirtytutors\routes_pages.py                              12      1    92%   20
+thirtytutors\secret_store.py                              43      5    88%   16, 24, 32, 55-57
+thirtytutors\speech_detection\__init__.py                  3      0   100%
+thirtytutors\speech_detection\audio_utils.py              14      0   100%
+thirtytutors\speech_detection\enrollment.py               49      0   100%
+thirtytutors\speech_detection\resemblyzer_backend.py      10      6    40%   14-18, 23-24
+thirtytutors\speech_detection\verifier.py                 39      8    79%   30, 41-47
+thirtytutors\stats.py                                     52     44    15%   31, 58-93, 110-123, 137-144
+thirtytutors\summarization.py                             52     45    13%   30-116
+thirtytutors\tutor_instructions.py                        19      1    95%   41
+thirtytutors\tutor_tools.py                                8      0   100%
+thirtytutors\updater.py                                   27      9    67%   7, 15, 33, 37, 41, 45, 49, 53, 57
+------------------------------------------------------------------------------------
+TOTAL                                                   2597    734    72%
+=========================== short test summary info ===========================
+FAILED tests/test_build_config.py::test_validate_quiz_items_logs_blank_answer_count_mismatch
+================= 1 failed, 236 passed, 80 warnings in 32.00s =================

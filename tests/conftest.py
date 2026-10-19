@@ -6,6 +6,8 @@ Available to every test module in this directory without importing.
 
 from __future__ import annotations
 
+import sys
+
 import numpy as np
 import pytest
 
@@ -16,6 +18,16 @@ def pytest_configure(config):
         "markers",
         "integration: tests that use the filesystem, SQLite, or a mocked websocket session",
     )
+
+
+@pytest.fixture(autouse=True)
+def test_vault_on_non_windows(monkeypatch):
+    # Only a test seam. Production fails closed without Windows DPAPI.
+    if sys.platform != "win32":
+        from thirtytutors import secret_store
+
+        monkeypatch.setattr(secret_store, "protect", lambda b: bytes(v ^ 173 for v in b))
+        monkeypatch.setattr(secret_store, "unprotect", lambda b: bytes(v ^ 173 for v in b))
 
 
 # ---------------------------------------------------------------------------

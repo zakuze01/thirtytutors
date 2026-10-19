@@ -23,6 +23,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import live_session, memory, quizzes, routes_api, routes_pages
+from .local_access import LocalAccessMiddleware
 from .profiles_store import migrate_legacy_model_name, migrate_legacy_profile_state
 
 # StaticFiles doesn't know the .mjs extension, so it serves ES modules as
@@ -69,6 +70,7 @@ async def _warm_up_speaker_models(app: FastAPI):
 
 
 app = FastAPI(lifespan=_warm_up_speaker_models)
+app.add_middleware(LocalAccessMiddleware)
 
 app.include_router(routes_pages.router)
 app.include_router(routes_api.router)

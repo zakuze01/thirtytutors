@@ -4,12 +4,12 @@ memory.SUMMARY_FOLD_EVERY_N_TURNS turns) and once more on disconnect.
 """
 
 import json
-import traceback
 
 from google.genai import types
 
 from . import memory, retry
 from .constants import SUMMARY_MODEL
+from .privacy import private_log as print
 from .profiles_store import get_client_for_key
 
 
@@ -27,6 +27,10 @@ def summarize_conversation(conversation_id: str, student_name: str, api_key: str
     A profile with no API key set just skips this - the raw turns are still
     safe in SQLite for whenever a key gets added.
     """
+    conversation = memory.get_conversation(conversation_id)
+    if not conversation or (conversation.get("config") or {}).get("memory_policy", "allowed") == "off":
+        return
+    epoch = memory.privacy_epoch(conversation["profile_id"])
     try:
         client = get_client_for_key(api_key)
     except ValueError:
@@ -44,6 +48,7 @@ def summarize_conversation(conversation_id: str, student_name: str, api_key: str
             "You maintain memory for an ongoing language-tutoring conversation "
             f"with {student_name}. Given the previous rolling summary and the "
             "new turns below, respond with ONLY a JSON object (no markdown "
+            "Use only facts explicitly observed in these turns; never invent personal details, scores, strengths or progress. "
             "fences, no commentary) shaped exactly like this:\n"
             '{"summary": "...", "vocab": [{"term": "...", "note": "..."}], "lesson_note": "..."}\n\n'
             "- summary: the previous summary updated to fold in the new turns. "
@@ -93,10 +98,12 @@ def summarize_conversation(conversation_id: str, student_name: str, api_key: str
             # the memory update still lands.
             summary_text = raw_text
 
+        if memory.privacy_epoch(conversation["profile_id"]) != epoch:
+            return
         if summary_text:
             memory.upsert_summary(conversation_id, summary_text, new_turns[-1]["seq"])
         for item in vocab_items:
-            if isinstance(item, dict) and item.get("term"):
+            if isinstance(item, dict) and item.get("term") and str(item["term"]).casefold() in transcript_lines.casefold():
                 memory.upsert_vocab_mistake(conversation_id, str(item["term"]), item.get("note"))
         if lesson_note:
             memory.append_lesson_log(conversation_id, lesson_note)
@@ -107,4 +114,4 @@ def summarize_conversation(conversation_id: str, student_name: str, api_key: str
             )
     except (RuntimeError, OSError, ValueError, json.JSONDecodeError) as e:
         print(f"[summarize_conversation] skipped for conversation={conversation_id!r}: {type(e).__name__}: {e}")
-        traceback.print_exc()
+        print("Provider operation failed")

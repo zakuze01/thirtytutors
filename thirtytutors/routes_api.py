@@ -40,6 +40,7 @@ from .constants import (
 from .conversation_policy import CHOICES, ConversationPolicy
 from .export_docx import build_notes_docx
 from .languages import LANGUAGES
+from .live_session import close_profile_sessions
 from .profiles_store import (
     delete_profile,
     get_profile_by_id,
@@ -47,6 +48,7 @@ from .profiles_store import (
     patch_profile,
     save_profiles,
 )
+from .secret_store import public_profile
 
 router = APIRouter()
 
@@ -377,7 +379,7 @@ async def create_profile(request: Request):
     profiles = load_profiles()
     profiles.append(profile)
     save_profiles(profiles)
-    return profile
+    return public_profile(profile)
 
 
 @router.get("/api/profiles/{profile_id}")
@@ -385,7 +387,7 @@ def get_profile(profile_id: str):
     profile = get_profile_by_id(profile_id)
     if profile is None:
         raise HTTPException(404, "Profile not found")
-    return profile
+    return public_profile(profile)
 
 
 @router.put("/api/profiles/{profile_id}")
@@ -395,17 +397,56 @@ async def update_profile(profile_id: str, request: Request):
     updated = patch_profile(profile_id, fields)
     if updated is None:
         raise HTTPException(404, "Profile not found")
-    return updated
+    return public_profile(updated)
 
 
 @router.delete("/api/profiles/{profile_id}")
-def remove_profile(profile_id: str):
+async def remove_profile(profile_id: str):
+    memory.erase_profile_memory(profile_id)
+    await close_profile_sessions(profile_id)
     if not delete_profile(profile_id):
         raise HTTPException(404, "Profile not found")
     for conv in memory.list_conversations(profile_id):
         memory.delete_conversation(conv["id"])
     memory.delete_profile_state(profile_id)
     speech_detection.delete_enrollment(profile_id)
+    return {"deleted": True}
+
+
+@router.get("/api/profiles/{profile_id}/memories")
+def get_memories(profile_id: str):
+    if get_profile_by_id(profile_id) is None:
+        raise HTTPException(404, "Profile not found")
+    return {"memories": memory.list_memories(profile_id)}
+
+
+@router.put("/api/profiles/{profile_id}/memories/{item_id}")
+async def save_profile_memory(profile_id: str, item_id: str, request: Request):
+    if get_profile_by_id(profile_id) is None:
+        raise HTTPException(404, "Profile not found")
+    payload = await request.json()
+    try:
+        saved = memory.save_memory(profile_id, payload.get("domain"), payload.get("text"), item_id)
+    except ValueError as exc:
+        raise HTTPException(400, "Invalid memory") from exc
+    await close_profile_sessions(profile_id)
+    return {"id": saved}
+
+
+@router.delete("/api/profiles/{profile_id}/memories/{item_id}")
+async def delete_profile_memory(profile_id: str, item_id: str):
+    memory.remove_memory(profile_id, item_id)
+    await close_profile_sessions(profile_id)
+    return {"deleted": True}
+
+
+@router.delete("/api/profiles/{profile_id}/memory")
+async def erase_profile_memory_endpoint(profile_id: str):
+    if get_profile_by_id(profile_id) is None:
+        raise HTTPException(404, "Profile not found")
+    memory.erase_profile_memory(profile_id)
+    patch_profile(profile_id, {"active_conversation_id": None})
+    await close_profile_sessions(profile_id)
     return {"deleted": True}
 
 
@@ -452,7 +493,7 @@ async def import_profile_endpoint(file: UploadFile = File(...)):
     except (KeyError, ValueError, zipfile.BadZipFile) as e:
         raise HTTPException(400, f"Could not read this backup file: {type(e).__name__}: {e}")
     profile = get_profile_by_id(profile_id)
-    return {"imported": True, "profile": profile}
+    return {"imported": True, "profile": public_profile(profile)}
 
 
 @router.post("/api/profiles/{profile_id}/check-auto-backup")

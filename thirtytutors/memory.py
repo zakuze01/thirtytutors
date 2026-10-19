@@ -36,6 +36,7 @@ import json
 import sqlite3
 import time
 import uuid
+from contextlib import contextmanager
 from datetime import UTC, date, datetime
 
 from .constants import DATA_DIR
@@ -77,6 +78,10 @@ def init_db() -> None:
     try:
         conn.executescript(
             """
+            CREATE TABLE IF NOT EXISTS privacy_epochs (profile_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL DEFAULT 0);
+            CREATE TABLE IF NOT EXISTS companion_memories (
+              id TEXT PRIMARY KEY, profile_id TEXT NOT NULL, domain TEXT NOT NULL, text TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS conversations (
               id TEXT PRIMARY KEY,
               profile_id TEXT NOT NULL,
@@ -779,6 +784,11 @@ def import_profile_conversations(profile_id: str, conversations: list[dict]) -> 
     """
     from . import quizzes  # lazy import - quizzes.py imports from this module at load time
 
+    for item in conversations:
+        existing = get_conversation(item["id"])
+        if existing and existing["profile_id"] != profile_id:
+            raise ValueError("Conversation belongs to another profile")
+
     conn = _connect()
     try:
         for conv in conversations:
@@ -839,3 +849,73 @@ def import_profile_conversations(profile_id: str, conversations: list[dict]) -> 
 
     for conv in conversations:
         quizzes.import_conversation_quizzes(conv["id"], conv.get("quiz_sessions", []))
+
+
+@contextmanager
+def _transaction():
+    conn = _connect()
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
+
+
+def privacy_epoch(profile_id):
+    with _transaction() as conn:
+        row = conn.execute("SELECT epoch FROM privacy_epochs WHERE profile_id=?", (profile_id,)).fetchone()
+        return row["epoch"] if row else 0
+
+
+def list_memories(profile_id):
+    with _transaction() as conn:
+        return [
+            dict(row)
+            for row in conn.execute(
+                "SELECT id,domain,text FROM companion_memories WHERE profile_id=? ORDER BY rowid", (profile_id,)
+            )
+        ]
+
+
+def save_memory(profile_id, domain, text, item_id=None):
+    if domain not in ("conversation", "learning") or not isinstance(text, str) or not text.strip() or len(text) > 2000:
+        raise ValueError("Invalid memory")
+    item_id = item_id or str(uuid.uuid4())
+    with _transaction() as conn:
+        existing = conn.execute("SELECT profile_id FROM companion_memories WHERE id=?", (item_id,)).fetchone()
+        if existing and existing["profile_id"] != profile_id:
+            raise ValueError("Memory belongs to another profile")
+        conn.execute(
+            "INSERT OR REPLACE INTO companion_memories(id,profile_id,domain,text) VALUES(?,?,?,?)",
+            (item_id, profile_id, domain, text.strip()),
+        )
+    invalidate_derived_memory(profile_id)
+    return item_id
+
+
+def invalidate_derived_memory(profile_id):
+    with _transaction() as conn:
+        conn.execute(
+            "DELETE FROM summaries WHERE conversation_id IN (SELECT id FROM conversations WHERE profile_id=?)", (profile_id,)
+        )
+        conn.execute(
+            "UPDATE conversations SET resumption_handle=NULL,resumption_config_json=NULL WHERE profile_id=?", (profile_id,)
+        )
+        conn.execute(
+            "INSERT INTO privacy_epochs(profile_id,epoch) VALUES(?,1) ON CONFLICT(profile_id) DO UPDATE SET epoch=epoch+1",
+            (profile_id,),
+        )
+
+
+def erase_profile_memory(profile_id):
+    invalidate_derived_memory(profile_id)
+    for conv in list_conversations(profile_id):
+        delete_conversation(conv["id"])
+    with _transaction() as conn:
+        conn.execute("DELETE FROM companion_memories WHERE profile_id=?", (profile_id,))
+
+
+def remove_memory(profile_id, item_id):
+    with _transaction() as conn:
+        conn.execute("DELETE FROM companion_memories WHERE profile_id=? AND id=?", (profile_id, item_id))
+    invalidate_derived_memory(profile_id)

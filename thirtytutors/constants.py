@@ -302,7 +302,8 @@ APP_VERSION = "1.2.1"
 # rather than platformdirs' default doubled-up
 # %LOCALAPPDATA%\ThirtyTutors\ThirtyTutors.
 _OLD_DATA_DIR = Path(__file__).parent / "data"
-DATA_DIR = Path(user_data_dir("ThirtyTutors", appauthor=False))
+DATA_DIR = Path(user_data_dir("CompanionLite", appauthor=False))
+APP_DISPLAY_NAME = "Companion Lite"
 
 
 def _migrate_legacy_data_dir() -> None:
@@ -327,7 +328,7 @@ def _migrate_legacy_data_dir() -> None:
             pass  # leave it in the old location - next startup will retry
 
 
-_migrate_legacy_data_dir()
+# No implicit moves from a legacy package directory. Import a local backup instead.
 
 PROFILES_FILE = DATA_DIR / "profiles.json"
 

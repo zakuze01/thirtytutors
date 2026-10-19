@@ -43,6 +43,8 @@ from pathlib import Path
 import uvicorn
 import webview
 
+from .constants import APP_DISPLAY_NAME
+from .local_access import LAUNCH_TOKEN
 from .main import app  # reuse the exact same FastAPI app defined in main.py
 
 # pywebview's icon= param wants a .ico on Windows and a .icns on macOS (per
@@ -131,11 +133,16 @@ def _build_uvicorn_server(host: str, port: int) -> uvicorn.Server:
     """
     try:
         config = uvicorn.Config(
-            app, host=host, port=port, log_level="info", timeout_graceful_shutdown=SERVER_GRACEFUL_SHUTDOWN_TIMEOUT_S
+            app,
+            host=host,
+            port=port,
+            log_level="info",
+            access_log=False,
+            timeout_graceful_shutdown=SERVER_GRACEFUL_SHUTDOWN_TIMEOUT_S,
         )
     except TypeError:
         print("[desktop] installed uvicorn doesn't support timeout_graceful_shutdown - continuing without it.")
-        config = uvicorn.Config(app, host=host, port=port, log_level="info")
+        config = uvicorn.Config(app, host=host, port=port, log_level="info", access_log=False)
     return uvicorn.Server(config)
 
 
@@ -174,7 +181,9 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
     already completed. Also blocks a bit LONGER than that, past
     webview.start() returning - see _shut_down_server_gracefully.
     """
-    webview.settings["ALLOW_DOWNLOADS"] = True  # off by default in pywebview - without this, downloads silently do nothing
+    if host != "127.0.0.1":
+        raise ValueError("Companion Lite binds only to 127.0.0.1")
+    webview.settings["ALLOW_DOWNLOADS"] = True
 
     if not _wait_for_port_free(host, port):
         print(f"[desktop] {host}:{port} still in use after waiting - starting anyway, uvicorn will report the real error")
@@ -193,7 +202,7 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
 
     # Window size is set generously wide, since the sidebar + main layout
     webview.create_window(
-        "ThirtyTutors",
+        APP_DISPLAY_NAME,
         # A cache-busting query string forces a fresh fetch on every launch,
         # regardless of anything already sitting in the persistent WebView2
         # profile's cache (see the private_mode=False note above).
@@ -201,7 +210,7 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
         # Points at /landing homepage on every launch - the last-active profile stays "logged
         # in" regardless (see localStorage.tutorProfileId, read by
         # profileMenu.js's top-bar button on every page)
-        f"http://{host}:{port}/landing?v={int(time.time())}",
+        f"http://{host}:{port}/landing?v={int(time.time())}&launch={LAUNCH_TOKEN}",
         width=1360,
         height=860,
         min_size=(1100, 700),

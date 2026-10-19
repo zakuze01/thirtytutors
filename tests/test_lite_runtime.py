@@ -10,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from thirtytutors import main, speech_detection, updater
+from thirtytutors.local_access import LAUNCH_TOKEN
 
 ROOT = Path(__file__).parents[1]
 
@@ -54,7 +55,7 @@ def test_startup_does_not_warm_up_speaker_model(monkeypatch):
 
 
 def test_ui_and_voice_picker_work_without_external_assets():
-    client = TestClient(main.app)
+    client = TestClient(main.app, base_url="http://127.0.0.1:8000", headers={"X-Companion-Token": LAUNCH_TOKEN})
     assert client.get("/").status_code == 200
     assert client.get("/companion.js").status_code == 200
     voices = client.get("/api/voices").json()["voices"]

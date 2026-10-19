@@ -175,11 +175,11 @@ def test_compute_quiz_type_empty_items_has_a_fallback():
     assert quizzes.compute_quiz_type([]) in {"multiple_choice", "fill_blank_dragdrop", "mixed"}
 
 
-def test_validate_quiz_items_logs_blank_answer_count_mismatch(capsys):
+def test_validate_quiz_items_does_not_log_private_quiz_payload(capsys):
     live_session._validate_quiz_items(
         [{"item_type": "fill_blank_dragdrop", "text_with_blanks": "{0} {1}", "correct_answers": ["only one"]}]
     )
-    assert "mismatch" in capsys.readouterr().out
+    assert capsys.readouterr().out == ""
 
 
 def test_validate_quiz_items_silent_when_counts_match(capsys):
