@@ -49,6 +49,7 @@ from .profiles_store import (
     save_profiles,
 )
 from .secret_store import public_profile
+from .voice_providers import PROVIDER_DEFAULTS, provider_config
 
 router = APIRouter()
 
@@ -339,6 +340,7 @@ async def create_profile(request: Request):
         "id": str(uuid.uuid4()),
         "name": name,
         "api_key": api_key,
+        "deepseek_api_key": (payload.get("deepseek_api_key") or "").strip() or None,
         "langfuse_public_key": None,
         "langfuse_secret_key": None,
         "langfuse_base_url": None,
@@ -717,6 +719,7 @@ async def create_conversation_endpoint(profile_id: str, request: Request):
     }
     try:
         config.update(ConversationPolicy.from_config({**config, **{k: payload[k] for k in CHOICES if k in payload}}).to_dict())
+        config.update(provider_config(payload))
     except (TypeError, ValueError) as exc:
         raise HTTPException(400, "Invalid conversation policy") from exc
     name = (payload.get("name") or "").strip() or None
@@ -766,6 +769,7 @@ async def update_conversation_endpoint(profile_id: str, conversation_id: str, re
             "model_name",
             "difficulty",
             *CHOICES,
+            *PROVIDER_DEFAULTS,
             "scenario",
         )
     ):
@@ -777,13 +781,15 @@ async def update_conversation_endpoint(profile_id: str, conversation_id: str, re
             "model_name",
             "difficulty",
             *CHOICES,
+            *PROVIDER_DEFAULTS,
         ):
-            if payload.get(k):
+            if payload.get(k) or (k in PROVIDER_DEFAULTS and k in payload):
                 config[k] = payload[k]
         if "scenario" in payload and payload["scenario"] in scenarios.SCENARIO_TEMPLATES:
             config["scenario"] = payload["scenario"]
         try:
             config.update(ConversationPolicy.from_config(config).to_dict())
+            config.update(provider_config(config))
         except (TypeError, ValueError) as exc:
             raise HTTPException(400, "Invalid conversation policy") from exc
 

@@ -74,3 +74,11 @@ any distribution. Review bundled third-party/DLL terms before sharing.
 
 LICENSE is PolyForm Noncommercial 1.0.0.
 Required Notice: Copyright 2026 Wissam Metawee (https://github.com/wiss84/thirtytutors)
+# DeepSeek + Gemini voice (preview 4)
+
+Trong **Cài đặt / Profile**, chọn **DeepSeek trả lời + Gemini nghe/đọc**, nhập cả
+Gemini API key và DeepSeek API key, rồi Lưu và Kết nối. Key để trống giữ bản đã lưu;
+hai key được mã hóa riêng bằng Windows DPAPI. Google nhận âm thanh và lời đáp để
+đọc; DeepSeek nhận transcript và ngữ cảnh bạn cho phép. Luồng ba bước có thể chậm
+hơn Live và không bảo đảm miễn phí. Gemini Live vẫn là lựa chọn mặc định.
+Xem `docs/08_DEEPSEEK_VOICE_REPORT.md` để biết giới hạn và bằng chứng kiểm thử.

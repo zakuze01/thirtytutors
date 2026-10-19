@@ -291,7 +291,7 @@ DEFAULT_MODEL = MODEL_OPTIONS[0]["id"]
 # importing this directly, falling back to this constant only if the
 # package isn't recognized as installed at all (e.g. running straight fromgit
 # a source checkout without ever having been pip-installed).
-APP_VERSION = "1.2.1+companionlite.3"
+APP_VERSION = "1.2.1+companionlite.4"
 
 # OS-appropriate per-user data directory (profiles.json, memory.db,
 # voice_enrollment/) instead of storing user data inside the package tree
@@ -355,6 +355,7 @@ PROFILE_EDITABLE_FIELDS = (
     "model_name",
     "active_conversation_id",
     "api_key",
+    "deepseek_api_key",
     "mic_calibrations",
     "default_difficulty",
     "langfuse_public_key",

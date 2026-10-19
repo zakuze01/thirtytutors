@@ -2,8 +2,10 @@
 
 from dataclasses import asdict, dataclass
 
+from .friendly_slang import instruction as slang_instruction
+
 # Bump whenever assembled behavior changes: provider resumption keeps old prompts.
-POLICY_REVISION = 3
+POLICY_REVISION = 4
 
 
 def policy_session_identity(config):
@@ -133,6 +135,7 @@ class ConversationPolicy:
             + " "
             + correction
             + humor
+            + (slang_instruction() if self.humor_style == "cheeky" else "")
             + practice
             + level
             + f" Difficulty: {self.difficulty}. Requested pace: {self.speech_pace}."

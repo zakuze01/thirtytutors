@@ -108,6 +108,15 @@ def test_cheeky_style_targets_situation_not_learner():
     assert "nhây hài" not in prompt(ConversationPolicy(humor_style="gentle"))
 
 
+def test_slang_is_optional_bounded_and_does_not_assume_gender():
+    text = prompt(ConversationPolicy(humor_style="cheeky"))
+    assert "Chuẩn rồi fen!" in text and "Good job, buddy!" in text
+    assert "at most ONE" in text and "never invent correctness" in text
+    assert "unless the user explicitly asks" in text
+    assert "never the English pronunciation model" in text
+    assert "Chuẩn rồi fen!" not in prompt(ConversationPolicy(humor_style="gentle"))
+
+
 @pytest.mark.parametrize("config", [{"humor_style": "insult"}, {"practice_style": "block_forever"}])
 def test_invalid_new_style_is_rejected(config):
     with pytest.raises(ValueError):

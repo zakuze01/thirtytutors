@@ -2,6 +2,11 @@
 
 **V1 acceptance is INCOMPLETE. Private local QA preview only.**
 
+Preview 4 adds optional DeepSeek + Gemini voice and the reviewed banter examples:
+297 Python tests pass (76% coverage) and 5 Node PCM/VAD tests pass. The new path
+has synthetic HTTP/provider and mocked browser evidence; real-key cloud speech
+and latency remain INCONCLUSIVE. See `08_DEEPSEEK_VOICE_REPORT.md`.
+
 Preview 3 adds cheeky humor, opt-in repeat practice and continuous microphone with
 barge-in: 262 Python tests and 5 Node PCM/VAD tests pass. See
 `07_CONTINUOUS_VOICE_REPORT.md`. Real mic/echo/provider acceptance remains pending.

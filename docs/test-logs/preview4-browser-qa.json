@@ -1,0 +1,19 @@
+{
+  "method": "Chrome with synthetic microphone, AudioContext and WebSocket; real isolated localhost REST",
+  "startup_microphone_calls": 0,
+  "provider_settings_visible": true,
+  "live_model_disabled_for_hybrid": true,
+  "saved_provider": "deepseek_gemini",
+  "saved_deepseek_model": "deepseek-v4-pro",
+  "saved_tts_model": "gemini-3.8-flash-tts",
+  "socket_route": "/ws/hybrid",
+  "key_fields_cleared_on_save": true,
+  "idle_silence_started_turns": 0,
+  "continuous_turns_started": 2,
+  "continuous_turns_ended": 2,
+  "microphone_opens_for_two_turns": 1,
+  "escape_stopped_all_tracks": true,
+  "tts_error_visible_after_turn_complete": true,
+  "unavailable_prevents_auto_retry": true,
+  "physical_audio_or_paid_api_used": false
+}

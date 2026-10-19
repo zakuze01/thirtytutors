@@ -98,6 +98,7 @@ def import_profile_backup_zip(data):
     for field in SECRET_FIELDS:
         profile[field] = profile.get(field) or (old_profile or {}).get(field)
     profile.pop("has_api_key", None)
+    profile.pop("has_deepseek_api_key", None)
     state = {
         key: profile.pop(key, None)
         for key in ("total_seconds_studied", "last_active_date", "current_streak", "seen_milestones", "last_auto_backup_at")

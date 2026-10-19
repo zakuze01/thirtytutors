@@ -896,6 +896,11 @@ async def ws_session(websocket: WebSocket):
             "difficulty": init_msg.get("difficulty") or DEFAULT_DIFFICULTY,
         }
 
+    if conv_config.get("voice_provider", "gemini_live") != "gemini_live":
+        await websocket.send_json({"type": "error", "message": "Select the DeepSeek + Gemini connection for this conversation."})
+        await websocket.send_json({"type": "session_status", "unavailable": True})
+        await websocket.close()
+        return
     model_name = conv_config.get("model_name") or DEFAULT_MODEL
     print(f"[ws_session] init: profile={profile.get('name')!r} conversation={(conv or {}).get('name')!r} model={model_name!r}")
 

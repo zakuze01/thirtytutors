@@ -18,7 +18,7 @@ for file in bundle.rglob("*"):
             x in name for x in ("torch", "resemblyzer", "talkinghead", "headaudio")
         ):
             raise SystemExit("Forbidden bundle asset/dependency: " + name)
-        if re.search(rb"AIza[0-9A-Za-z_-]{35}", file.read_bytes()):
+        if re.search(rb"AIza[0-9A-Za-z_-]{35}|\bsk-[0-9a-fA-F]{32,64}\b", file.read_bytes()):
             raise SystemExit("Potential credential detected; artifact withheld")
 sha = hashlib.sha256(installer.read_bytes()).hexdigest()
 manifest = {
@@ -33,8 +33,8 @@ manifest = {
     "installer_sha256": sha,
     "installer_bytes": installer.stat().st_size,
     "bundle_bytes": sum(p.stat().st_size for p in bundle.rglob("*") if p.is_file()),
-    "secret_scan": "PASS (Google key pattern and no runtime data bundled)",
-    "acceptance": "PRIVATE QA PREVIEW — live Gemini and clean Windows 10/11 acceptance outstanding",
+    "secret_scan": "PASS (Google/DeepSeek key patterns and no runtime data bundled)",
+    "acceptance": "PRIVATE QA PREVIEW — live Gemini/DeepSeek and clean Windows 10/11 acceptance outstanding",
 }
 (dist / "build_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 (dist / "SHA256SUMS.txt").write_text(sha + "  " + installer.name + "\n", encoding="utf-8")

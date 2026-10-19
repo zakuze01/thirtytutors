@@ -30,3 +30,13 @@ M0–M5 implementation is committed with local QA evidence; V1 acceptance is inc
 Outstanding: real Gemini audio/bilingual/interrupt/network QA; 10–20 live latency
 turns; native DPI and clean Windows 10/11 install/uninstall/mic acceptance. No claim
 of reduced network latency, measured learning progress or a fully offline AI.
+# Private preview 4 — DeepSeek + Gemini voice
+
+- Optional DeepSeek Flash/V4 Pro replies with Gemini transcription and TTS;
+  separate encrypted keys and explicit provider/data-flow settings.
+- Cancellable voice turns, stale-result/privacy guards, bounded PCM/HTTP payloads,
+  fixed credential destinations and visible errors. Gemini Live stays default.
+- 28 optional family-friendly VI/EN banter examples; gendered address requires
+  the user's explicit preference. No transcript-based pronunciation scores.
+- Automated and mocked UI checks only for new cloud path; real-key latency,
+  speech quality, quota and clean Windows acceptance still pending.

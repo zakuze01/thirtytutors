@@ -22,7 +22,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import live_session, memory, quizzes, routes_api, routes_pages
+from . import hybrid_session, live_session, memory, quizzes, routes_api, routes_pages
 from .local_access import LocalAccessMiddleware
 from .profiles_store import migrate_legacy_model_name, migrate_legacy_profile_state
 
@@ -75,6 +75,7 @@ app.add_middleware(LocalAccessMiddleware)
 app.include_router(routes_pages.router)
 app.include_router(routes_api.router)
 app.include_router(live_session.router)
+app.include_router(hybrid_session.router)
 
 
 @app.middleware("http")
