@@ -1,0 +1,2 @@
+retina-face 0.0.17 requires tensorflow, which is not installed.
+selenium 4.33.0 has requirement typing_extensions~=4.13.2, but you have typing-extensions 4.16.0.

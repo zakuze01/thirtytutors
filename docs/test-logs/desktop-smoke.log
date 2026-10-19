@@ -1,0 +1,58 @@
+INFO:     Started server process [5396]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:18749 (Press CTRL+C to quit)
+[speech_detection] warm_up failed: ModuleNotFoundError: No module named 'resemblyzer'
+INFO:     127.0.0.1:64180 - "GET /landing?v=1792394459 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49942 - "GET /UI/styles/modals.css?v=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64180 - "GET /UI/styles/base.css?v=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51866 - "GET /UI/styles/topbar.css?v=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49845 - "GET /UI/styles/settings.css?v=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52893 - "GET /UI/styles/modals.css?v=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61420 - "GET /UI/styles/landing.css?v=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49942 - "GET /ThirtyTutors_Academy.webp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52893 - "GET /UI/scripts/theme.js?v=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64180 - "GET /UI/scripts/update.js?v=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49845 - "GET /UI/scripts/profileMenu.js?v=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51866 - "GET /UI/scripts/statsPane.js?v=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61420 - "GET /UI/scripts/languageAutocomplete.js?v=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52893 - "GET /UI/scripts/notes.js?v=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49942 - "GET /UI/scripts/settings.js?v=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49845 - "GET /UI/scripts/landing.js?v=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61420 - "GET /marketing/speaking.mp4 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:61420 - "GET /marketing/dancing.mp4 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52352 - "GET /api/whats-new-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59703 - "GET /api/languages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52352 - "GET /marketing/cards/females/Ava.gif HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59703 - "GET /marketing/cards/males/Brett.gif HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:65341 - "GET /marketing/cards/males/Dean.gif HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64823 - "GET /marketing/cards/males/Ezra.gif HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:57966 - "GET /marketing/cards/females/Chloe.gif HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52352 - "GET /marketing/cards/females/Elena.gif HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52352 - "GET /ThirtyTutors.ico HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57966 - "GET /marketing/cards/males/Felix.gif HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58295 - "GET /api/update-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52352 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52352 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /marketing/cards/females/Holly.gif HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52777 - "GET /api/download-progress HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for background tasks to complete. (CTRL+C to force quit)
+avatars.zip ---------------------------------- 265.6/265.6 MB 10.0 MB/s 0:00:00
+voices.zip --------------------------------------- 7.9/7.9 MB 46.0 MB/s 0:00:00
+photos.zip --------------------------------------- 3.6/3.6 MB 15.1 MB/s 0:00:00
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5396]
+DESKTOP_SMOKE_RETURNED 39.08
