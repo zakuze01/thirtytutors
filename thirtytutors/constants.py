@@ -9,6 +9,7 @@ file keeps DEFAULT_DIFFICULTY only, since routes/profile code needs a
 plain config default independent of any instruction text.
 """
 
+import os
 import shutil
 from pathlib import Path
 
@@ -290,7 +291,7 @@ DEFAULT_MODEL = MODEL_OPTIONS[0]["id"]
 # importing this directly, falling back to this constant only if the
 # package isn't recognized as installed at all (e.g. running straight fromgit
 # a source checkout without ever having been pip-installed).
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.2.1+companionlite.1"
 
 # OS-appropriate per-user data directory (profiles.json, memory.db,
 # voice_enrollment/) instead of storing user data inside the package tree
@@ -300,7 +301,9 @@ APP_VERSION = "1.2.1"
 # rather than platformdirs' default doubled-up
 # %LOCALAPPDATA%\ThirtyTutors\ThirtyTutors.
 _OLD_DATA_DIR = Path(__file__).parent / "data"
-DATA_DIR = Path(user_data_dir("CompanionLite", appauthor=False))
+DATA_DIR = Path(os.environ.get("COMPANION_LITE_DATA_DIR") or user_data_dir("CompanionLite", appauthor=False))
+if not DATA_DIR.is_absolute():
+    raise ValueError("COMPANION_LITE_DATA_DIR must be absolute")
 APP_DISPLAY_NAME = "Companion Lite"
 
 
