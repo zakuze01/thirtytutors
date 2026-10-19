@@ -2,6 +2,14 @@
 
 from dataclasses import asdict, dataclass
 
+# Bump whenever assembled behavior changes: provider resumption keeps old prompts.
+POLICY_REVISION = 2
+
+
+def policy_session_identity(config):
+    return {**config, "_policy_revision": POLICY_REVISION}
+
+
 CHOICES = {
     "mode": {"friend", "teacher"},
     "reply_language_preference": {"english_first", "balanced", "vietnamese_first"},

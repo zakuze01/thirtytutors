@@ -131,7 +131,7 @@ from .constants import (
     VOICE_OPTIONS,
     get_api_voice_name,
 )
-from .conversation_policy import ConversationPolicy
+from .conversation_policy import ConversationPolicy, policy_session_identity
 from .privacy import private_log as print
 from .profiles_store import get_client_for_key, get_profile_by_id, patch_profile
 from .summarization import summarize_conversation
@@ -731,7 +731,7 @@ async def _connect_live_session_with_fallback(
         "model_name": model_name,
         "fallback_model": fallback_model,
         "conv_config": conv_config,
-        "config_identity": dict(conv_config),
+        "config_identity": policy_session_identity(conv_config),
         "resumption_handle": resumption_handle,
     }
 
@@ -905,7 +905,7 @@ async def ws_session(websocket: WebSocket):
     # from the conversation's rolling summary instead. Otherwise (plain
     # reconnect: network blip, session time limit) we resume and keep the
     # conversation context Google is already holding.
-    config_identity = dict(conv_config)
+    config_identity = policy_session_identity(conv_config)
     resumption_handle = None
     summary_text = None
     review_terms = None
@@ -1244,7 +1244,7 @@ async def ws_session(websocket: WebSocket):
                                 await flush_turn_buffer_to_memory(sender)
                                 sender.clear()
                                 conv_config = {**conv_config, **policy.to_dict()}
-                                config_identity = dict(conv_config)
+                                config_identity = policy_session_identity(conv_config)
                                 if conv is not None:
                                     memory.update_conversation(conv["id"], config=conv_config)
                                     memory.clear_resumption(conv["id"])

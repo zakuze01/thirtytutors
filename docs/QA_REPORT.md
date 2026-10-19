@@ -1,6 +1,10 @@
 # Companion Lite QA status — 2026-10-19
 
 **V1 acceptance is INCOMPLETE. Private local QA preview only.**
+
+Latest preview 2 adjusts Friend Mode for playful beginner Vietnamese–English
+conversation: 254 tests passed, 74% coverage; see `06_BILINGUAL_PLAY_REPORT.md`.
+The milestone table below is the historical initial-preview evidence.
 Source: zakuze01/thirtytutors, branch `companion-lite/m0-audit`.
 Upstream reference `2d37a142d0552ac44ac69b54d0d78ddbf7c49c04` is unchanged.
 No PyPI publication, GitHub Release or installer upload has been performed.

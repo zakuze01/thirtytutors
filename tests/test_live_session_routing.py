@@ -351,7 +351,7 @@ def test_reconnect_resumes_when_config_unchanged(ws_app, make_profile, make_conv
     conv = make_conversation(profile["id"], target_language="Spanish")
     # Simulate a resumption handle stored by an earlier session with the
     # exact same config this conversation still has:
-    memory.set_resumption(conv["id"], "handle-from-before", conv["config"])
+    memory.set_resumption(conv["id"], "handle-from-before", live_session.policy_session_identity(conv["config"]))
 
     fake_session = FakeLiveSession(responses=[_response(server_content=_server_content(turn_complete=True))])
     client = ws_app(fake_session)
@@ -369,6 +369,21 @@ def test_reconnect_resumes_when_config_unchanged(ws_app, make_profile, make_conv
         assert status["resumed"] is True
         ws.receive_json()
         ws.send_json({"type": "close"})
+
+
+def test_policy_upgrade_discards_old_prompt_session_but_keeps_observed_context(make_profile, make_conversation):
+    profile = make_profile(api_key="fake-key")
+    conv = make_conversation(profile["id"], reply_language_preference="balanced", difficulty="beginner")
+    memory.insert_turn(conv["id"], "user", "Con mèo đói")
+    memory.set_resumption(conv["id"], "old-prompt-handle", conv["config"])
+    refreshed, handle, summary, _, _ = live_session._refresh_conversation_memory_context(
+        conv, live_session.policy_session_identity(conv["config"])
+    )
+    assert handle is None
+    assert refreshed["resumption_handle"] is None
+    assert "Con mèo đói" in summary
+    assert refreshed["config"] == conv["config"]
+    assert memory.get_turn_count(conv["id"]) == 1
 
 
 def test_init_must_be_the_first_message(ws_app, make_profile):
