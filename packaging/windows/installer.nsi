@@ -15,7 +15,9 @@ SetCompressor /SOLID lzma
 
 Function .onInit
   ${IfNot} ${RunningX64}
+    IfSilent +2
     MessageBox MB_OK "This build requires Windows 10/11 x64."
+    SetErrorLevel 3
     Abort
   ${EndIf}
   SetRegView 32
@@ -23,7 +25,9 @@ Function .onInit
   StrCmp $0 "" 0 runtime_found
   ReadRegStr $0 HKCU "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" "pv"
   StrCmp $0 "" 0 runtime_found
+  IfSilent +2
   MessageBox MB_OK "Install Microsoft Edge WebView2 Evergreen Runtime, then run this installer again: https://developer.microsoft.com/microsoft-edge/webview2/"
+  SetErrorLevel 3
   Abort
   runtime_found:
 FunctionEnd
