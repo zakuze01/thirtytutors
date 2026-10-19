@@ -441,6 +441,7 @@ def update_conversation(conversation_id: str, name: str | None = None, config: d
 def delete_conversation(conversation_id: str) -> bool:
     from . import quizzes  # lazy import - quizzes.py imports from this module at load time
 
+    bump_conversation_epoch(conversation_id)
     conn = _connect()
     try:
         cur = conn.execute("DELETE FROM conversations WHERE id=?", (conversation_id,))
@@ -894,6 +895,8 @@ def save_memory(profile_id, domain, text, item_id=None):
 
 
 def invalidate_derived_memory(profile_id):
+    for conversation in list_conversations(profile_id):
+        bump_conversation_epoch(conversation["id"])
     with _transaction() as conn:
         conn.execute(
             "DELETE FROM summaries WHERE conversation_id IN (SELECT id FROM conversations WHERE profile_id=?)", (profile_id,)
@@ -919,3 +922,15 @@ def remove_memory(profile_id, item_id):
     with _transaction() as conn:
         conn.execute("DELETE FROM companion_memories WHERE profile_id=? AND id=?", (profile_id, item_id))
     invalidate_derived_memory(profile_id)
+
+
+def conversation_epoch(conversation_id):
+    return privacy_epoch("conversation:" + conversation_id)
+
+
+def bump_conversation_epoch(conversation_id):
+    with _transaction() as conn:
+        conn.execute(
+            "INSERT INTO privacy_epochs(profile_id,epoch) VALUES(?,1) ON CONFLICT(profile_id) DO UPDATE SET epoch=epoch+1",
+            ("conversation:" + conversation_id,),
+        )

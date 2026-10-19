@@ -136,7 +136,6 @@ from .privacy import private_log as print
 from .profiles_store import get_client_for_key, get_profile_by_id, patch_profile
 from .summarization import summarize_conversation
 from .tutor_instructions import build_system_instruction
-from .tutor_tools import build_quiz_tool
 
 router = APIRouter()
 ACTIVE_SOCKETS = {}
@@ -312,7 +311,7 @@ def build_config(
     kwargs = {
         "response_modalities": ["AUDIO"],
         "system_instruction": system_instruction,
-        "tools": [build_quiz_tool(native_language=native_language, target_language=target_language)],
+        "tools": [],
         "input_audio_transcription": types.AudioTranscriptionConfig(),
         "output_audio_transcription": types.AudioTranscriptionConfig(),
         "speech_config": types.SpeechConfig(
@@ -1017,7 +1016,8 @@ async def ws_session(websocket: WebSocket):
     # since only the elapsed duration matters, never an absolute timestamp,
     # and monotonic is immune to the system clock changing mid-session.
     session_start_monotonic = time.monotonic()
-    session_epoch = memory.privacy_epoch(profile["id"]) if profile.get("id") else 0
+    session_epoch = memory.conversation_epoch(conv["id"]) if conv else 0
+    opening_requested = False
     if profile.get("id"):
         ACTIVE_SOCKETS.setdefault(profile["id"], set()).add(websocket)
 
@@ -1154,7 +1154,7 @@ async def ws_session(websocket: WebSocket):
         ) as gen:
             observability.update(gen, output=tutor_text or None)
 
-            if conv is None or memory.privacy_epoch(profile["id"]) != session_epoch:
+            if conv is None or memory.conversation_epoch(conv["id"]) != session_epoch:
                 return
 
             if user_text.strip():
@@ -1226,7 +1226,7 @@ async def ws_session(websocket: WebSocket):
                     await sender.send_audio(window_bytes, "hands-free")
 
                 async def browser_to_live():
-                    nonlocal conv_config, config_identity
+                    nonlocal conv_config, config_identity, opening_requested
                     while True:
                         msg = await websocket.receive_json()
                         msg_type = msg.get("type")
@@ -1250,6 +1250,26 @@ async def ws_session(websocket: WebSocket):
                                     memory.clear_resumption(conv["id"])
                                 await websocket.send_json({"type": "policy_pending", "mode": policy.mode})
                                 return "policy_change"
+                            elif msg_type in ("review_request", "voice_preview", "session_open"):
+                                if msg_type == "session_open":
+                                    if opening_requested or resumed or (conv and memory.get_turn_count(conv["id"])):
+                                        continue
+                                    opening_requested = True
+                                text = (
+                                    "Please review this session using only observed evidence: up to three strengths, three priorities and five review terms. No scores. Say when evidence is insufficient."
+                                    if msg_type == "review_request"
+                                    else (
+                                        "Open with a brief natural AI greeting and at most one relevant question."
+                                        if msg_type == "session_open"
+                                        else "Please say one short greeting in English and Vietnamese to preview this voice."
+                                    )
+                                )
+                                if msg_type != "session_open":
+                                    turn_buffer["user"].append(text)
+                                await sender.send_client_content(
+                                    turns=[{"role": "user", "parts": [{"text": text}]}], turn_complete=True
+                                )
+                                turn_state.update(awaiting_response=True, started_at=time.monotonic(), waiting_long_sent=False)
                             elif msg_type == "start_turn":
                                 sender.clear("push-to-talk")
                                 await sender.send_activity_start()

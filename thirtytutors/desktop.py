@@ -173,62 +173,38 @@ def _shut_down_server_gracefully(server: uvicorn.Server, server_thread: threadin
         print(f"[desktop] server thread still running after {SERVER_JOIN_TIMEOUT_S:.0f}s - exiting anyway.")
 
 
-def run(host: str = "127.0.0.1", port: int = 8000) -> None:
-    """Starts the FastAPI server in a background thread, then opens the
-    desktop window pointed at it. Blocks until the window is closed
-    (webview.start() is blocking) - this is the actual entry point cli.py's
-    `thirtytutors` command calls after the first-run bootstrap (if any) has
-    already completed. Also blocks a bit LONGER than that, past
-    webview.start() returning - see _shut_down_server_gracefully.
-    """
+def run(host: str = "127.0.0.1", port: int = 0) -> None:
+    """Reserve a loopback port before starting the shell; never open another service."""
     if host != "127.0.0.1":
         raise ValueError("Companion Lite binds only to 127.0.0.1")
+    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+    try:
+        listener.bind((host, port))
+        listener.listen(128)
+    except OSError:
+        listener.close()
+        raise RuntimeError("Cannot reserve a local app port. Close another copy or retry.") from None
+    port = listener.getsockname()[1]
     webview.settings["ALLOW_DOWNLOADS"] = True
-
-    if not _wait_for_port_free(host, port):
-        print(f"[desktop] {host}:{port} still in use after waiting - starting anyway, uvicorn will report the real error")
-
     server = _build_uvicorn_server(host, port)
-    # daemon=True as a safety net only (so a bug in the shutdown
-    # coordination below still can't make the process un-killable) - the
-    # actual coordination is the explicit should_exit + join() in
-    # _shut_down_server_gracefully, not this flag; see this module's own
-    # docstring for why relying on daemon semantics alone was the bug.
-    server_thread = threading.Thread(target=server.run, daemon=True)
+    server_thread = threading.Thread(target=server.run, kwargs={"sockets": [listener]}, daemon=True)
     server_thread.start()
-
-    # Give uvicorn a moment to bind before pointing the window at it.
-    time.sleep(1.5)
-
-    # Window size is set generously wide, since the sidebar + main layout
-    webview.create_window(
-        APP_DISPLAY_NAME,
-        # A cache-busting query string forces a fresh fetch on every launch,
-        # regardless of anything already sitting in the persistent WebView2
-        # profile's cache (see the private_mode=False note above).
-        #
-        # Points at /landing homepage on every launch - the last-active profile stays "logged
-        # in" regardless (see localStorage.tutorProfileId, read by
-        # profileMenu.js's top-bar button on every page)
-        f"http://{host}:{port}/landing?v={int(time.time())}&launch={LAUNCH_TOKEN}",
-        width=1360,
-        height=860,
-        min_size=(1100, 700),
-        resizable=True,
-    )
-    webview.start(
-        private_mode=False,
-        icon=str(ICON_PATH) if ICON_PATH.exists() else None,
-        debug=False,  # Turn on for debugging.
-    )
-
-    # The window is fully closed at this point - either the user closed it,
-    # or updater.close_this_window() destroyed it programmatically as part
-    # of Update & Relaunch (both go through the identical webview.start()
-    # return path). See _shut_down_server_gracefully's own docstring for
-    # why this call, not just letting run() return immediately, is what
-    # actually matters here.
-    _shut_down_server_gracefully(server, server_thread)
+    try:
+        time.sleep(1.5)
+        webview.create_window(
+            APP_DISPLAY_NAME,
+            f"http://{host}:{port}/landing?v={int(time.time())}&launch={LAUNCH_TOKEN}",
+            width=1100,
+            height=800,
+            min_size=(480, 520),
+            resizable=True,
+        )
+        webview.start(private_mode=False, icon=str(ICON_PATH) if ICON_PATH.exists() else None, debug=False)
+    finally:
+        _shut_down_server_gracefully(server, server_thread)
+        listener.close()
 
 
 if __name__ == "__main__":

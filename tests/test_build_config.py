@@ -44,9 +44,9 @@ def _tool_function_names(config) -> set[str]:
     return {fn.name for tool in config.tools for fn in tool.function_declarations}
 
 
-def test_build_config_declares_quiz_without_avatar_mood_tool():
+def test_build_config_has_no_avatar_or_unsolicited_quiz_tools():
     config = live_session.build_config(_minimal_profile(), _minimal_conv_config(), "gemini-2.5-flash-native-audio-latest")
-    assert _tool_function_names(config) == {"start_quiz"}
+    assert _tool_function_names(config) == set()
 
 
 def test_build_config_omits_spaced_repetition_block_without_review_terms():

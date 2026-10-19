@@ -133,7 +133,6 @@ VOICE_OPTIONS = [
         "gender": "Female",
         "pitch": "Mid-to-low",
         "alias": "Isla",
-        "api_voice_name": "Zephyr",
     },
     {
         "name": "Despina",
@@ -204,7 +203,6 @@ VOICE_OPTIONS = [
         "gender": "Female",
         "pitch": "High",
         "alias": "Stella",
-        "api_voice_name": "Leda",
     },
     {
         "name": "Achird",
@@ -345,6 +343,7 @@ PROFILES_FILE = DATA_DIR / "profiles.json"
 # conversation - see memory.py/live_session.py - not per profile). Dropped
 # from this list entirely.
 PROFILE_EDITABLE_FIELDS = (
+    "speaker_device_id",
     "mic_device_id",
     "mic_label",
     "voice_gender",

@@ -30,7 +30,7 @@ def summarize_conversation(conversation_id: str, student_name: str, api_key: str
     conversation = memory.get_conversation(conversation_id)
     if not conversation or (conversation.get("config") or {}).get("memory_policy", "allowed") == "off":
         return
-    epoch = memory.privacy_epoch(conversation["profile_id"])
+    epoch = memory.conversation_epoch(conversation_id)
     try:
         client = get_client_for_key(api_key)
     except ValueError:
@@ -98,7 +98,7 @@ def summarize_conversation(conversation_id: str, student_name: str, api_key: str
             # the memory update still lands.
             summary_text = raw_text
 
-        if memory.privacy_epoch(conversation["profile_id"]) != epoch:
+        if memory.conversation_epoch(conversation_id) != epoch:
             return
         if summary_text:
             memory.upsert_summary(conversation_id, summary_text, new_turns[-1]["seq"])

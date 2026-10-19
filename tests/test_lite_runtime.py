@@ -22,6 +22,8 @@ def test_p0_distribution_has_no_3d_vendor_or_heavy_requirement():
     assert not (static / "vendor").exists()
     assert not list(static.rglob("*.glb"))
     assert not list(static.rglob("*.wav"))
+    assert not list(static.rglob("*.mp4"))
+    assert not list(static.rglob("*_background.webp"))
     for file in static.glob("companion.*"):
         text = file.read_text(encoding="utf-8")
         assert all(term not in text for term in ("TalkingHead", "/avatar", "/marketing", "/photos", ".glb"))
@@ -70,3 +72,21 @@ def test_upstream_install_and_download_paths_are_disabled():
     for fn in (updater.download_and_extract_assets, updater.download_and_extract_marketing_assets):
         with pytest.raises(RuntimeError, match="disabled"):
             fn()
+
+
+def test_settings_policy_persists_without_an_active_provider(make_profile, make_conversation):
+    profile = make_profile()
+    conv = make_conversation(profile["id"])
+    client = TestClient(main.app, base_url="http://127.0.0.1", headers={"X-Companion-Token": LAUNCH_TOKEN})
+    path = f"/api/profiles/{profile['id']}/conversations/{conv['id']}"
+    assert (
+        client.put(
+            path, json={"mode": "teacher", "reply_language_preference": "vietnamese_first", "memory_policy": "off"}
+        ).status_code
+        == 200
+    )
+    config = client.get(path).json()["config"]
+    assert config["mode"] == "teacher"
+    assert config["reply_language_preference"] == "vietnamese_first"
+    assert config["memory_policy"] == "off"
+    assert client.put(path, json={"mode": "invalid"}).status_code == 400

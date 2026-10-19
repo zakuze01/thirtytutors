@@ -10,9 +10,26 @@ can silently regress without anyone noticing until a manual close-the-app
 test.
 """
 
+import socket
+
 import pytest
 
 from thirtytutors import desktop
+
+
+def test_reserved_port_cannot_open_another_service(monkeypatch):
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        monkeypatch.setattr(desktop.webview, "create_window", lambda *a, **k: pytest.fail("Must not open an occupied port"))
+        with pytest.raises(RuntimeError, match="reserve"):
+            desktop.run(port=listener.getsockname()[1])
+
+
+def test_shell_rejects_external_bind():
+    with pytest.raises(ValueError, match="127.0.0.1"):
+        desktop.run(host="0.0.0.0")
+
 
 pytestmark = pytest.mark.unit
 
@@ -70,7 +87,7 @@ def test_run_enables_downloads_opens_a_window_and_shuts_down_gracefully(monkeypa
     )
     desktop.webview.settings["ALLOW_DOWNLOADS"] = False
 
-    desktop.run(host="127.0.0.1", port=8000)
+    desktop.run(host="127.0.0.1", port=0)
 
     assert desktop.webview.settings["ALLOW_DOWNLOADS"] is True
     assert [c[0] for c in calls] == ["Thread", "create_window", "start", "shutdown"]
@@ -80,10 +97,12 @@ def test_run_enables_downloads_opens_a_window_and_shuts_down_gracefully(monkeypa
     # daemon=True as a safety net only - see _build_uvicorn_server/run's
     # own comments for why daemon=True alone was never the real fix.
     _, thread_kwargs = calls[0]
-    assert thread_kwargs == {"target": fake_server.run, "daemon": True}
+    assert thread_kwargs["target"] == fake_server.run
+    assert thread_kwargs["daemon"] is True
+    assert len(thread_kwargs["kwargs"]["sockets"]) == 1
 
     _, args, _ = calls[1]  # create_window
-    assert "127.0.0.1:8000" in args[1]
+    assert "127.0.0.1:" in args[1]
 
     # Graceful shutdown runs LAST - after webview.start() returns (the
     # window is already closed by then) - handed the exact same

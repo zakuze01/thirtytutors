@@ -331,6 +331,9 @@ async def create_profile(request: Request):
     if not name:
         raise HTTPException(400, "Name is required")
     api_key = (payload.get("api_key") or "").strip() or None
+    difficulty = payload.get("default_difficulty") or DEFAULT_DIFFICULTY
+    if difficulty not in CHOICES["difficulty"]:
+        raise HTTPException(400, "Invalid difficulty")
 
     profile = {
         "id": str(uuid.uuid4()),
@@ -339,8 +342,9 @@ async def create_profile(request: Request):
         "langfuse_public_key": None,
         "langfuse_secret_key": None,
         "langfuse_base_url": None,
-        "mic_device_id": None,
-        "mic_label": None,
+        "mic_device_id": payload.get("mic_device_id"),
+        "mic_label": payload.get("mic_label"),
+        "speaker_device_id": payload.get("speaker_device_id"),
         "voice_gender": next((v["gender"] for v in VOICE_OPTIONS if v["name"] == DEFAULT_VOICE), "Female"),
         # Starting point only - avatarSelect.js reads this back as the
         # default native_language/model_name when adding a new language to
@@ -353,7 +357,7 @@ async def create_profile(request: Request):
         # Starting point for the difficulty toggle next time this profile
         # adds a new language (see avatarSelect.js) - editable from the
         # Settings modal's Learning tab (settings.js).
-        "default_difficulty": DEFAULT_DIFFICULTY,
+        "default_difficulty": difficulty,
         "active_conversation_id": None,
         # Keyed by mic label (see constants.DEFAULT_MIC_CALIBRATION_KEY for
         # the default-mic sentinel) - each entry:
@@ -487,7 +491,9 @@ async def import_profile_endpoint(file: UploadFile = File(...)):
     locally, it's fully replaced - not merged - per backup.py's own
     documented behavior.
     """
-    zip_bytes = await file.read()
+    zip_bytes = await file.read(64 * 1024 * 1024 + 1)
+    if len(zip_bytes) > 64 * 1024 * 1024:
+        raise HTTPException(400, "Backup exceeds safety limits")
     try:
         profile_id = backup.import_profile_backup_zip(zip_bytes)
     except (KeyError, ValueError, zipfile.BadZipFile) as e:
@@ -759,6 +765,8 @@ async def update_conversation_endpoint(profile_id: str, conversation_id: str, re
             "target_language",
             "model_name",
             "difficulty",
+            *CHOICES,
+            "scenario",
         )
     ):
         config = dict(conv["config"])
@@ -768,9 +776,16 @@ async def update_conversation_endpoint(profile_id: str, conversation_id: str, re
             "target_language",
             "model_name",
             "difficulty",
+            *CHOICES,
         ):
             if payload.get(k):
                 config[k] = payload[k]
+        if "scenario" in payload and payload["scenario"] in scenarios.SCENARIO_TEMPLATES:
+            config["scenario"] = payload["scenario"]
+        try:
+            config.update(ConversationPolicy.from_config(config).to_dict())
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(400, "Invalid conversation policy") from exc
 
     updated = memory.update_conversation(conversation_id, name=name, config=config)
     return updated
