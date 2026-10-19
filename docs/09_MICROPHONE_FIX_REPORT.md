@@ -6,6 +6,14 @@ using the Realtek 3.5 mm microphone. The installed controller hash matched previ
 4. Windows microphone/device/desktop permissions were already enabled. Earlier
 UI inspection showed Realtek as default input and GS3 as default output.
 
+After restarting, actual application Settings showed its saved input was
+**Communications - Microphone (GS3)**, overriding the Windows default. This is a
+confirmed device-selection mismatch with the user's stated Realtek microphone.
+The profile was changed to the explicit **Microphone (Realtek(R) Audio)** device
+and saved through the UI. The local WebView2 microphone permission was also
+accepted under the user's request. The wrong input could contribute to missed or
+incorrect transcription; acoustic and recognition quality still need a spoken test.
+
 ## Findings and changes
 
 The previous energy gate required 120 ms of uninterrupted above-threshold energy.
@@ -63,3 +71,21 @@ No real voice was recorded for these tests, no raw audio was saved, and no paid
 provider call was made. Realtek speech capture, echo, Vietnamese/English recognition
 and actual conversational quality remain **INCONCLUSIVE** until a physical test.
 This patch does not claim the Spanish-transcript issue is resolved.
+
+## Windows build and in-place update
+
+Build source `4c6dfa65ace7f243d15f94f3ce226cfd06f3c34d` was clean at manifest
+generation. PyInstaller/NSIS succeeded. Installer: 34,071,726 bytes, SHA-256
+`edeeaaeabfe665cc19198f5cf02578a77bc1eab3651ab764635f5e32e1a53c30`.
+The frozen UI loaded in 4.82 seconds with mic off and exited 0 in isolated storage.
+Credential-pattern/forbidden-asset scan passed.
+
+The existing installed app was closed normally, allowing graceful shutdown to
+finish. Before update, a local current-user DPAPI-encrypted rollback was created.
+The per-user installer exited 0. All 5 application data files (108,614 bytes total)
+matched pre-update hashes byte-for-byte before reopening. Installed HTML,
+controller and speech gate matched the tested source. Profile/history were visible
+after restart. One agent-started hidden duplicate with no user session was cleaned
+up; the installed application was reopened visibly using Computer Use. No data
+snapshot, real credentials, profile identifiers or transcripts were committed or
+uploaded. Evidence contains only counts, synthetic QA and build metadata.
