@@ -60,6 +60,7 @@ def test_ui_and_voice_picker_work_without_external_assets():
     client = TestClient(main.app, base_url="http://127.0.0.1:8000", headers={"X-Companion-Token": LAUNCH_TOKEN})
     assert client.get("/").status_code == 200
     assert client.get("/companion.js").status_code == 200
+    assert client.get("/microphone.js").status_code == 200
     voices = client.get("/api/voices").json()["voices"]
     assert any(v["name"] == "Kore" for v in voices)
     assert client.get("/avatar/test.glb").status_code == 404

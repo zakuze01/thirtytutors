@@ -1,0 +1,28 @@
+✔ default and valid explicit device open once without enumeration (1.6619ms)
+✔ stale origin ID is rebound to the same unique label; probe is stopped (0.6613ms)
+✔ missing or ambiguous saved mic never falls back to another input (1.0828ms)
+✔ denied, busy and unrelated errors are not retried (0.5155ms)
+✔ cancel before request makes no microphone calls (0.2519ms)
+✔ late initial permission result is stopped after cancellation (0.2802ms)
+✔ cancel while permission probe is pending never opens final capture (0.3283ms)
+✔ cancel while enumeration is pending never opens final capture (0.3097ms)
+✔ late final stream is stopped after cancellation (0.3219ms)
+✔ device matching uses IDs first and ignores output devices (0.3561ms)
+✔ idle and short click send no turn; pre-roll remains bounded (9.3872ms)
+✔ speech includes pre-roll and survives a natural short pause (3.4297ms)
+✔ playback raises threshold but louder barge-in is accepted (0.9352ms)
+✔ syllables with short unvoiced gaps still start a turn (1.6772ms)
+✔ widely spaced clicks never accumulate into a speech turn (9.2094ms)
+✔ new default admits a quiet signal previously below the threshold (0.827ms)
+✔ short syllable dips do not split an active turn (2.861ms)
+✔ continuous sound has a bounded maximum turn (1.6007ms)
+✔ turn boundaries use PCM duration, independent of packet size (2.8707ms)
+✔ quick endpoint ends after 600 ms; patient setting preserves a longer pause (1.6612ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 65.4591

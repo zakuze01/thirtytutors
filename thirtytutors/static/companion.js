@@ -130,8 +130,8 @@ function encodePCM(samples) {
 function captureControls(){
   $('talk').disabled=!connected || continuous;
   $('listen').disabled=!connected;
-  $('listen').setAttribute('aria-pressed',String(continuous));
-  $('listen').textContent=continuous?'Tắt mic': 'Bật nghe liên tục';
+  $('listen').setAttribute('aria-pressed',String(continuous && recording));
+  $('listen').textContent=pendingPress?'Hủy mở mic':continuous?'Tắt mic': 'Bật nghe liên tục';
 }
 function beginSpeech(){
   responseStartedAt=0;$('responseTiming').textContent='';
@@ -144,11 +144,12 @@ function endSpeech(){
 }
 async function startRecording(handsFree=false) {
   if (pendingPress || recording || !connected) return;
-  continuous=handsFree;captureControls();
-  pendingPress = true; const generation = ++pressGeneration;
+  continuous=handsFree;
+  pendingPress = true; const generation = ++pressGeneration;captureControls();
+  $('micStatus').textContent='Đang mở micro · nếu có hộp quyền, chọn Allow / Cho phép. Nếu mic vẫn tắt sau đó, bấm bật lại.';
   let stream, ctx;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({audio: {deviceId: $('mic').value ? {exact:$('mic').value} : undefined, channelCount:1, echoCancellation:true, noiseSuppression:true, autoGainControl:true}});
+    stream = await CompanionMicrophone.open(navigator.mediaDevices,$('mic').value,$('mic').selectedOptions[0]?.textContent,()=>pendingPress && generation===pressGeneration && connected);
     if (!pendingPress || generation !== pressGeneration || !connected) { stream.getTracks().forEach(t => t.stop()); return; }
     ctx = new AudioContext({sampleRate:16000}); await ctx.resume();
     await ctx.audioWorklet.addModule('/pcm-processor.js');
@@ -158,6 +159,8 @@ async function startRecording(handsFree=false) {
     input.connect(micAnalyser); input.connect(worklet);
     const silent = ctx.createGain(); silent.gain.value = 0; worklet.connect(silent); silent.connect(ctx.destination);
     capture = {stream, ctx, worklet}; recording = true;
+    const currentId=stream.getTracks()[0]?.getSettings?.().deviceId;
+    if(currentId && $('mic').value && currentId!==$('mic').value){const label=stream.getTracks()[0].label || $('mic').selectedOptions[0]?.textContent; if(![...$('mic').options].some(o=>o.value===currentId))option($('mic'),currentId,label);$('mic').value=currentId;}
     $('micDevice').textContent='Đầu vào: '+(stream.getTracks()[0]?.label || $('mic').selectedOptions[0]?.textContent || 'Micro đã chọn');
     lastMicMeter=0;micMeterEnergy=0;micMeterSamples=0;
     for(const track of stream.getTracks())track.onended=()=>{stopRecording();status('Micro đã ngắt · bật lại khi sẵn sàng.');};
@@ -181,8 +184,8 @@ async function startRecording(handsFree=false) {
     stream?.getTracks().forEach(t=>t.stop()); if (ctx && ctx.state !== 'closed') await ctx.close();
     if(generation!==pressGeneration)return;
     stopRecording();
-    showError(new Error('Không mở được micro. Kiểm tra quyền micro trong Windows rồi thử lại.'));
-  } finally { if (generation === pressGeneration) pendingPress = false; }
+    showError(new Error(CompanionMicrophone.errorMessage(err)));
+  } finally { if (generation === pressGeneration) {pendingPress = false;captureControls();} }
 }
 function stopRecording(reason='') {
   pendingPress = false; pressGeneration++;
@@ -227,7 +230,7 @@ $('settings').addEventListener('close',()=>{$('apiKey').value='';$('deepseekKey'
 $('showTranscript').onchange = () => $('transcript').hidden = !$('showTranscript').checked;
 $('newConversation').onclick = () => newConversation().catch(showError);
 $('profile').onchange = async () => {disconnect();profileId=$('profile').value;localStorage.setItem('companionProfile',profileId);const data=await loadHistory();if(data.conversations.length)await chooseConversation(data.active_conversation_id || data.conversations[0].id);else await newConversation();};
-$('devices').onclick = async () => {let stream;try {stream=await navigator.mediaDevices.getUserMedia({audio:true});stream.getTracks().forEach(t=>t.stop());$('mic').replaceChildren();$('speaker').replaceChildren();option($('mic'),'','Micro mặc định');option($('speaker'),'','Loa mặc định của Windows');for(const d of await navigator.mediaDevices.enumerateDevices()){if(d.kind==='audioinput')option($('mic'),d.deviceId,d.label||'Micro');if(d.kind==='audiooutput')option($('speaker'),d.deviceId,d.label||'Loa');}}catch(err){showError(err);}finally{stream?.getTracks().forEach(t=>t.stop());}};
+$('devices').onclick = async () => {let stream;const micId=$('mic').value,micLabel=$('mic').selectedOptions[0]?.textContent,speakerId=$('speaker').value;try {stream=await navigator.mediaDevices.getUserMedia({audio:true});stream.getTracks().forEach(t=>t.stop());const devices=await navigator.mediaDevices.enumerateDevices();$('mic').replaceChildren();$('speaker').replaceChildren();option($('mic'),'','Micro mặc định');option($('speaker'),'','Loa mặc định của Windows');for(const d of devices){if(d.kind==='audioinput')option($('mic'),d.deviceId,d.label||'Micro');if(d.kind==='audiooutput')option($('speaker'),d.deviceId,d.label||'Loa');}const selected=CompanionMicrophone.match(devices,micId,micLabel);if(selected)$('mic').value=selected.deviceId;if([...$('speaker').options].some(o=>o.value===speakerId))$('speaker').value=speakerId;$('settingsError').textContent='';}catch(err){showError(new Error(CompanionMicrophone.errorMessage(err)));}finally{stream?.getTracks().forEach(t=>t.stop());}};
 async function saveSettings(forceNew=false){
   try{
     const wasConnected=connected;disconnect();
