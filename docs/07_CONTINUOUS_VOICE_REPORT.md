@@ -40,7 +40,9 @@ Local speech start clears queued playback and invalidates pending async playback
 work. The existing manual activity/audio protocol is reused. Provider config sets
 START_OF_ACTIVITY_INTERRUPTS explicitly. Server commits the interrupted observed
 reply separately, ignores late model output/turn completion while user input is
-open, keeps input transcription, and avoids duplicate activity boundaries.
+open, keeps input transcription, and avoids duplicate activity boundaries. If old
+packets arrive after mic release, output remains suppressed until the old generation's
+interruption/completion boundary, preventing playback from restarting with stale audio.
 
 Protocol reference checked 2026-10-19: Google's
 [Live capabilities guide](https://ai.google.dev/gemini-api/docs/live-api/capabilities)
@@ -51,14 +53,14 @@ and acoustic behavior still need real-key/device validation.
 
 ## Executed verification
 
-- Python: **261 passed, 0 failed, 0 skipped**, 74% coverage, final run 31.74 s.
+- Python: **262 passed, 0 failed, 0 skipped**, 74% coverage, final run 27.28 s.
 - Node: **5 passed, 0 failed**, deterministic PCM tests for silence/click rejection,
   bounded pre-roll, multi-turn/pause boundaries, elevated playback threshold,
   maximum duration and frame-size independence.
 - Ruff check/format and JS syntax checks pass. Windows/manual CI now includes Node
   tests; remote CI has not been run here.
 - Mocked real FastAPI websocket integration: user barge-in during old model reply,
-  stale model audio/transcript discarded, old/new observed turns separate, exactly
+  stale model audio/transcript discarded even after mic release, old/new observed turns separate, exactly
   one start/end despite duplicate boundaries. Provider/audio are synthetic.
 - Browser with fake microphone/AudioContext/WebSocket: startup mic calls 0;
   silence sends no audio; two automatic turns require one initial mic activation;

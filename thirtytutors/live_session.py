@@ -1062,7 +1062,7 @@ async def ws_session(websocket: WebSocket):
     # (a fresh Gemini session has no memory of the old one's open turn).
     hf_state = {"active": False, "buffer": bytearray(), "turn_active": False}
     # Both PTT and the lightweight browser VAD use manual activity boundaries.
-    input_state = {"active": False}
+    input_state = {"active": False, "discard_until_boundary": False}
 
     # Tracks whether a turn is currently awaiting a response from Gemini -
     # set the moment activity_end is sent (push-to-talk's "turn_complete"
@@ -1276,6 +1276,11 @@ async def ws_session(websocket: WebSocket):
                             elif msg_type == "start_turn":
                                 if input_state["active"]:
                                     continue
+                                input_state["discard_until_boundary"] = (
+                                    input_state["discard_until_boundary"]
+                                    or turn_state["awaiting_response"]
+                                    or bool(turn_buffer["tutor"])
+                                )
                                 input_state["active"] = True
                                 # Commit the interrupted reply separately from the new utterance.
                                 if turn_buffer["user"] or turn_buffer["tutor"]:
@@ -1433,13 +1438,14 @@ async def ws_session(websocket: WebSocket):
                                 await websocket.send_json({"type": "waiting_long", "active": False})
 
                             sc = getattr(response, "server_content", None)
+                            discard_model = input_state["active"] or input_state["discard_until_boundary"]
                             go_away = getattr(response, "go_away", None)
                             if go_away is not None:
                                 go_away_pending = True
                                 print(f"[ws_session] go_away received: {go_away}")
                                 continue
 
-                            if go_away_pending and sc and getattr(sc, "turn_complete", False) and not input_state["active"]:
+                            if go_away_pending and sc and getattr(sc, "turn_complete", False) and not discard_model:
                                 go_away_pending = False
                                 turn_state["awaiting_response"] = False
                                 await flush_turn_buffer_to_memory(sender)
@@ -1450,9 +1456,14 @@ async def ws_session(websocket: WebSocket):
                             # output from the interrupted generation is ignored while
                             # manual input is open; input transcription is retained.
                             if sc and getattr(sc, "interrupted", False):
+                                input_state["discard_until_boundary"] = False
                                 await websocket.send_json({"type": "interrupted"})
+                            elif sc and getattr(sc, "turn_complete", False):
+                                # A completed old generation is also a valid boundary
+                                # if it finished just before Google received the barge-in.
+                                input_state["discard_until_boundary"] = False
 
-                            if getattr(response, "data", None) and not input_state["active"]:
+                            if getattr(response, "data", None) and not discard_model:
                                 await websocket.send_json(
                                     {
                                         "type": "audio",
@@ -1468,7 +1479,7 @@ async def ws_session(websocket: WebSocket):
 
                             out_transcript = getattr(sc, "output_transcription", None) if sc else None
                             out_text = getattr(out_transcript, "text", None) if out_transcript else None
-                            if out_text and not input_state["active"]:
+                            if out_text and not discard_model:
                                 turn_buffer["tutor"].append(out_text)
                                 await websocket.send_json({"type": "transcript_out", "text": out_text})
 
@@ -1567,7 +1578,7 @@ async def ws_session(websocket: WebSocket):
                                     print(f"[ws_session] storing new resumption handle for conversation={conv['id']!r}")
                                     memory.set_resumption(conv["id"], new_handle, _config_identity)
 
-                            if sc and getattr(sc, "turn_complete", False) and not input_state["active"]:
+                            if sc and getattr(sc, "turn_complete", False) and not discard_model:
                                 turn_state["awaiting_response"] = False
                                 await flush_turn_buffer_to_memory(sender)
                                 await websocket.send_json({"type": "turn_complete"})
@@ -1758,6 +1769,7 @@ async def ws_session(websocket: WebSocket):
                 resumed = resumption_handle is not None and not handle_was_dropped
                 hf_state["turn_active"] = False  # the new Gemini session has no open turn from the old one
                 input_state["active"] = False
+                input_state["discard_until_boundary"] = False
                 if turn_state["awaiting_response"]:
                     # A turn was still outstanding when the old session died
                     # (its audio just got replayed onto the new one, above) -

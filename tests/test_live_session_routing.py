@@ -159,7 +159,10 @@ def test_policy_switch_mid_response_preserves_turns_and_clears_old_session(monke
     assert memory.get_conversation(conv["id"])["config"]["mode"] == "teacher"
 
 
-def test_barge_in_drops_stale_audio_and_keeps_interrupted_turn_separate(ws_app, make_profile, make_conversation):
+@pytest.mark.parametrize("end_before_interrupt", [False, True])
+def test_barge_in_drops_stale_audio_and_keeps_interrupted_turn_separate(
+    ws_app, make_profile, make_conversation, end_before_interrupt
+):
     profile = make_profile(api_key="fake-key")
     conv = make_conversation(profile["id"])
 
@@ -172,8 +175,13 @@ def test_barge_in_drops_stale_audio_and_keeps_interrupted_turn_separate(ws_app, 
             yield _response(server_content=_server_content(output_text="Old reply"), data=b"old-audio")
             while not any("activity_start" in x for x in self.sent_realtime_inputs):
                 await asyncio.sleep(0.01)
+            if end_before_interrupt:
+                while not any("activity_end" in x for x in self.sent_realtime_inputs):
+                    await asyncio.sleep(0.01)
+                yield _response(server_content=_server_content(output_text="stale after mic stopped"), data=b"stale-audio")
             yield _response(server_content=SimpleNamespace(interrupted=True))
-            yield _response(server_content=_server_content(output_text="stale", turn_complete=True), data=b"stale-audio")
+            if not end_before_interrupt:
+                yield _response(server_content=_server_content(output_text="stale", turn_complete=True), data=b"stale-audio")
             yield _response(server_content=_server_content(input_text="I want water"))
             while not any("activity_end" in x for x in self.sent_realtime_inputs):
                 await asyncio.sleep(0.01)
@@ -190,10 +198,14 @@ def test_barge_in_drops_stale_audio_and_keeps_interrupted_turn_separate(ws_app, 
         ws.send_json({"type": "start_turn"})
         ws.send_json({"type": "start_turn"})  # duplicate local boundary is harmless
         ws.send_json({"type": "audio_chunk", "data": base64.b64encode(b"\x00\x01" * 50).decode()})
+        if end_before_interrupt:
+            ws.send_json({"type": "turn_complete"})
+            ws.send_json({"type": "turn_complete"})
         assert ws.receive_json() == {"type": "interrupted"}
         assert ws.receive_json() == {"type": "transcript_in", "text": "I want water"}
-        ws.send_json({"type": "turn_complete"})
-        ws.send_json({"type": "turn_complete"})
+        if not end_before_interrupt:
+            ws.send_json({"type": "turn_complete"})
+            ws.send_json({"type": "turn_complete"})
         assert ws.receive_json()["data"] == base64.b64encode(b"new-audio").decode()
         assert ws.receive_json()["text"] == "Here you go"
         assert ws.receive_json()["type"] == "turn_complete"
