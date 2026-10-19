@@ -39,4 +39,24 @@ No real Groq/DeepSeek cloud request or speech-quality/latency claim is made.
 Final test/build evidence is recorded below after checks. Real recognition and
 conversation require the user's keys entered in-app. No public release/upload.
 
+## Verified result
+
+320 Python tests pass, zero failures/skips, 77% coverage, 34.68s. 20 Node tests
+pass; Ruff lint/format, JavaScript syntax and diff whitespace checks pass.
+Clean build source: `8ef69b855908a189886a0bdb9ecc49811ac050aa`.
+PyInstaller and NSIS exited 0. Frozen UI loaded with mic off in 4.383s and exited
+0 using isolated empty QA data. Installer size 60,798,868 bytes, SHA-256
+`001c5c71aa4b8cd8f41e99d007e211656d99cef3e83faa71637297b04c72e446`.
+Credential-pattern and forbidden-asset scans passed. The existing app was already
+closed; an encrypted rollback was created before the in-place per-user update.
+Installer exited 0; all five data files matched their pre-update hashes. Installed
+EXE, five relevant static files, offline engine, license and complete source
+archive matched the tested build/staging. The app was left closed; no further
+native automation was performed after the user's earlier Escape stop.
+
+This verifies installation and mocked routing/cost boundaries, not a real paid
+DeepSeek/Groq conversation. Enter keys through Settings, choose Groq mode for
+free-tier use or the explicitly paid DeepSeek/offline mode. Clean-machine Windows
+10/11 and physical-audio acceptance are still pending.
+
 Primary API reference: [DeepSeek JSON mode](https://api-docs.deepseek.com/guides/json_mode/).
