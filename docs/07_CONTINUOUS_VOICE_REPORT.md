@@ -80,3 +80,10 @@ speech recognition or humorous generated responses having passed.
 Windows frozen smoke/build results and artifact manifest are recorded alongside
 these logs. No existing owner installation/profile is overwritten during QA.
 V1 clean Windows, physical devices, twelve live scenarios and latency gates remain.
+
+Final PyInstaller/NSIS builds succeeded. The frozen EXE loaded the native page in
+4.228 seconds in one smoke run, mic off, and returned exit 0. Bundled HTML,
+controller JS and speech gate hashes match source. Installer is 34,046,360 bytes;
+SHA256 is recorded in `preview3-build-manifest.json` and `preview3-SHA256SUMS.txt`.
+Installer logic is unchanged from previously exercised M5 install/uninstall tests;
+preview 3 has not been installed over the owner's active installation here.
