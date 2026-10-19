@@ -37,7 +37,7 @@ Section "Install"
   CreateShortcut "$SMPROGRAMS\Companion Lite.lnk" "$INSTDIR\CompanionLite.exe"
   CreateShortcut "$DESKTOP\Companion Lite.lnk" "$INSTDIR\CompanionLite.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\CompanionLite" "DisplayName" "Companion Lite (private QA preview)"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\CompanionLite" "UninstallString" '$"$INSTDIR\Uninstall.exe$"'
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\CompanionLite" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\CompanionLite" "NoModify" 1
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\CompanionLite" "NoRepair" 1
 SectionEnd
