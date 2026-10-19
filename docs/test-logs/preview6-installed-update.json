@@ -1,0 +1,11 @@
+{
+  "installer_exit": 0,
+  "data_unchanged_before_restart": true,
+  "preserved_files": 5,
+  "installed_matches": {
+    "CompanionLite.exe": true,
+    "_internal/thirtytutors/static/companion.js": true,
+    "_internal/thirtytutors/static/companion.html": true,
+    "_internal/thirtytutors/static/speech-gate.js": true
+  }
+}

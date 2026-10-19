@@ -57,3 +57,18 @@ the pending timer. The number is local and not persisted or uploaded.
 Real response length compliance, end-to-end latency and user perception still
 require actual conversation. No claim that Gemini/API/network latency is fixed.
 No public release or artifact upload is performed.
+
+## Windows evidence
+
+Clean build source: `0bebb5acbb6394af9da159ba91f30c2e81d6e217`.
+PyInstaller and NSIS succeeded. The isolated frozen UI loaded with microphone off
+in 4.71 s and exited 0. Installer: 34,076,074 bytes, SHA-256
+`6484d431a9d0d62fcb70030c86883ccee095e3b3f6e97f08348ebc7b6aec68df`.
+Credential-pattern and forbidden-asset scans passed.
+
+The existing app was closed normally. An encrypted local DPAPI rollback was
+created; the per-user update exited 0. All 5 application data files matched
+pre-update hashes before restart. Installed EXE and the three relevant static
+files matched the tested bundle/source. No snapshot, credential, profile or real
+transcript was included in Git or uploaded. This verifies update preservation,
+not a clean-machine Windows acceptance or a cloud-latency improvement.
