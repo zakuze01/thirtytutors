@@ -11,6 +11,7 @@ let micAnalyser = null, playbackAnalyser = null, mutedUntilTurn = false;
 let activeTranscript = {}, reconnectDelay = 2000;
 let editingMemoryId = null;
 let voiceProvider = 'gemini_live';
+let responseStartedAt=0;
 let lastMicMeter=0,micMeterEnergy=0,micMeterSamples=0;
 function updateMicMeter(samples){for(const value of samples)micMeterEnergy+=value*value;micMeterSamples+=samples.length;const now=performance.now();if(now-lastMicMeter<100)return;lastMicMeter=now;const rms=Math.sqrt(micMeterEnergy/Math.max(1,micMeterSamples));micMeterEnergy=0;micMeterSamples=0;$('micLevel').value=Math.min(1,rms/.1);const db=rms>0?Math.max(-96,Math.round(20*Math.log10(rms))): -96;$('micLevelText').textContent=`Mức mic: ${db} dBFS · ${speechActive?'Đang gửi lời nói':rms>=Number($('sensitivity').value)?'Có tín hiệu':'Chưa bắt tiếng · thử mức Nhạy nếu nói nhỏ'}`;}
 function selectedProvider(){return {voice_provider:$('voiceProvider').value,deepseek_model:$('deepseekModel').value,tts_model:$('ttsModel').value,transcription_model:'gemini-3.5-flash-lite'};}
@@ -133,12 +134,13 @@ function captureControls(){
   $('listen').textContent=continuous?'Tắt mic': 'Bật nghe liên tục';
 }
 function beginSpeech(){
+  responseStartedAt=0;$('responseTiming').textContent='';
   speechActive=true;stopAudio();mutedUntilTurn=false;activeTranscript={};send({type:'start_turn'});
   status('Listening · Đang nghe bạn');
 }
 function endSpeech(){
   if(!speechActive)return;
-  speechActive=false;send({type:'turn_complete'});status('Thinking · Đang chờ');
+  speechActive=false;responseStartedAt=performance.now();send({type:'turn_complete'});status('Thinking · Đang chờ');
 }
 async function startRecording(handsFree=false) {
   if (pendingPress || recording || !connected) return;
@@ -160,7 +162,7 @@ async function startRecording(handsFree=false) {
     lastMicMeter=0;micMeterEnergy=0;micMeterSamples=0;
     for(const track of stream.getTracks())track.onended=()=>{stopRecording();status('Micro đã ngắt · bật lại khi sẵn sàng.');};
     ctx.onstatechange=()=>{if(ctx.state==='suspended' && capture?.ctx===ctx){stopRecording();status('Micro tạm dừng · bật lại khi sẵn sàng.');}};
-    voiceGate=continuous?new LocalSpeechGate({sampleRate:ctx.sampleRate,threshold:Number($('sensitivity').value)}):null;
+    voiceGate=continuous?new LocalSpeechGate({sampleRate:ctx.sampleRate,threshold:Number($('sensitivity').value),silenceMs:Number($('responsePace').value)}):null;
     ensureWave();
     if(!continuous)beginSpeech();
     worklet.port.onmessage = event => {
@@ -206,13 +208,16 @@ async function playAudio(encoded) {
   const when = Math.max(nextPlayback, playback.currentTime), fade = Math.min(.002, buffer.duration / 2);
   gain.gain.setValueAtTime(0,when); gain.gain.linearRampToValueAtTime(1,when+fade); gain.gain.setValueAtTime(1,when+buffer.duration-fade); gain.gain.linearRampToValueAtTime(0,when+buffer.duration);
   sources.add(source); source.onended = () => {sources.delete(source);source.disconnect();gain.disconnect();}; source.start(when); nextPlayback = when + buffer.duration; ensureWave(); status('Speaking · AI đang nói');
+  if(responseStartedAt){const seconds=(performance.now()-responseStartedAt)/1000+Math.max(0,when-playback.currentTime);$('responseTiming').textContent=`Giọng trả lời sau ${seconds.toFixed(1)} giây`;responseStartedAt=0;}
 }
-function stopAudio() { playbackGeneration++;mutedUntilTurn = true; for (const source of sources) {try {source.stop();} catch {}} sources.clear(); nextPlayback = playback?.currentTime || 0; }
+function stopAudio() { playbackGeneration++;responseStartedAt=0;mutedUntilTurn = true; for (const source of sources) {try {source.stop();} catch {}} sources.clear(); nextPlayback = playback?.currentTime || 0; }
 function showError(err) { status('Error · ' + err.message); $('settingsError').textContent = err.message; }
 $('talk').addEventListener('pointerdown', e => {e.preventDefault(); $('talk').setPointerCapture(e.pointerId); startRecording();});
 for (const event of ['pointerup','pointercancel','lostpointercapture']) $('talk').addEventListener(event,()=>{if(!continuous)stopRecording();});
 $('listen').onclick=()=>{if(continuous || pendingPress)stopRecording();else{stopRecording();startRecording(true);}};
 $('sensitivity').onchange=()=>{if(voiceGate)voiceGate.threshold=Number($('sensitivity').value);};
+$('responsePace').onchange=()=>{localStorage.setItem('companionResponsePause',$('responsePace').value);if(voiceGate)voiceGate.silenceMs=Number($('responsePace').value);};
+const savedResponsePace=localStorage.getItem('companionResponsePause');if(['600','800','1200'].includes(savedResponsePace))$('responsePace').value=savedResponsePace;
 window.addEventListener('blur',()=>stopRecording('Bạn vừa chuyển cửa sổ; bấm Bật nghe liên tục để nghe lại')); window.addEventListener('beforeunload', disconnect);
 document.addEventListener('keydown', e => {if (e.code === 'Escape') {stopRecording();stopAudio();} if (e.code === 'Space' && !continuous && !e.repeat && (!$('settings').open && !$('memoryDialog').open) && (e.target===$('talk') || !['INPUT','TEXTAREA','SELECT','BUTTON'].includes(e.target.tagName))) {e.preventDefault();startRecording();}});
 document.addEventListener('keyup', e => {if (e.code === 'Space' && !continuous) stopRecording();});

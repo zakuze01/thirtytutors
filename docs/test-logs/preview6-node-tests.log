@@ -1,0 +1,18 @@
+✔ idle and short click send no turn; pre-roll remains bounded (11.7188ms)
+✔ speech includes pre-roll and survives a natural short pause (2.626ms)
+✔ playback raises threshold but louder barge-in is accepted (0.869ms)
+✔ syllables with short unvoiced gaps still start a turn (1.4691ms)
+✔ widely spaced clicks never accumulate into a speech turn (7.0802ms)
+✔ new default admits a quiet signal previously below the threshold (0.5531ms)
+✔ short syllable dips do not split an active turn (2.7786ms)
+✔ continuous sound has a bounded maximum turn (1.2382ms)
+✔ turn boundaries use PCM duration, independent of packet size (2.5013ms)
+✔ quick endpoint ends after 600 ms; patient setting preserves a longer pause (1.324ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 128.757

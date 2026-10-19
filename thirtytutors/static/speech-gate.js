@@ -3,7 +3,7 @@
 (function(root) {
   'use strict';
   class LocalSpeechGate {
-    constructor({sampleRate=16000, threshold=.007, attackMs=120, silenceMs=800, preRollMs=320, maxTurnMs=30000}={}) {
+    constructor({sampleRate=16000, threshold=.007, attackMs=120, silenceMs=600, preRollMs=320, maxTurnMs=30000}={}) {
       Object.assign(this,{sampleRate,threshold,attackMs,silenceMs,preRollMs,maxTurnMs});
       this.active=false;this.candidate=0;this.onset=[];this.onsetMs=0;this.silence=0;this.elapsed=0;this.pre=[];this.preSamples=0;
     }

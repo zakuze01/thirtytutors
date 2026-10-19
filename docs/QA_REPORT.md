@@ -2,6 +2,11 @@
 
 **V1 acceptance is INCOMPLETE. Private local QA preview only.**
 
+Preview 6 shortens default spoken replies and reduces local end-silence waiting
+from 800 to 600 ms with a slower-speaker option and local first-audio timing.
+298 Python and 10 Node tests pass; cloud latency and actual response length
+remain subject to conversational validation. See `10_SHORT_RESPONSES_REPORT.md`.
+
 Preview 5 repairs quiet/fragmented speech onset and adds local microphone signal
 diagnostics: 298 Python tests and 9 Node tests pass, 76% coverage. The user's app
 was corrected from a saved GS3 input to explicit Realtek; native UI shows actual

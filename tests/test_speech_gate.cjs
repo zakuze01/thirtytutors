@@ -66,3 +66,11 @@ test('turn boundaries use PCM duration, independent of packet size',()=>{
     assert.equal(feed(gate,900,0,false,size).filter(e=>e.end).length,1);
   }
 });
+test('quick endpoint ends after 600 ms; patient setting preserves a longer pause',()=>{
+  const quick=new Gate();feed(quick,200,.03);
+  assert(feed(quick,584).every(e=>!e.end));
+  assert.equal(feed(quick,16).filter(e=>e.end).length,1);
+  const patient=new Gate({silenceMs:1200});feed(patient,200,.03);
+  assert(feed(patient,800).every(e=>!e.end));
+  assert.equal(feed(patient,400).filter(e=>e.end).length,1);
+});

@@ -327,6 +327,9 @@ def build_config(
         ),
         "session_resumption": session_resumption_config,
     }
+    if model_name == "gemini-3.1-flash-live-preview":
+        # Documented default, made explicit: do not add reasoning latency to chat.
+        kwargs["thinking_config"] = types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL)
 
     # Extends how long a Live session can run before Google forcibly ends it
     # (a go_away near the default time/context limit) by compressing older
