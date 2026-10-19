@@ -30,6 +30,17 @@ FunctionEnd
 
 Section "Install"
   StrCpy $INSTDIR "$LOCALAPPDATA\Programs\CompanionLite"
+  IfFileExists "$INSTDIR\CompanionLite.exe" 0 install_ready
+  System::Call 'kernel32::CreateFileW(w "$INSTDIR\CompanionLite.exe", i 0x40000000, i 1, p 0, i 3, i 0, p 0) p.r0'
+  StrCmp $0 -1 install_busy
+  System::Call 'kernel32::CloseHandle(p r0)'
+  Goto install_ready
+  install_busy:
+  IfSilent +2
+  MessageBox MB_OK "Close Companion Lite before installing or upgrading."
+  SetErrorLevel 2
+  Abort
+  install_ready:
   SetOutPath "$INSTDIR"
   File /r "..\..\dist\CompanionLite\*"
   File "..\..\README_WINDOWS.md"
@@ -44,9 +55,13 @@ SectionEnd
 
 Section "Uninstall"
   StrCmp $INSTDIR "$LOCALAPPDATA\Programs\CompanionLite" 0 refuse
+  ClearErrors
   Delete "$INSTDIR\CompanionLite.exe"
+  IfErrors busy
   Delete "$INSTDIR\README_WINDOWS.md"
+  ClearErrors
   RMDir /r "$INSTDIR\_internal"
+  IfErrors busy
   Delete "$INSTDIR\Uninstall.exe"
   RMDir "$INSTDIR"
   Delete "$SMPROGRAMS\Companion Lite.lnk"
@@ -57,6 +72,14 @@ Section "Uninstall"
   RMDir /r "$LOCALAPPDATA\CompanionLite"
   Goto done
   refuse:
+  IfSilent +2
   MessageBox MB_OK "Unexpected install location. Uninstall cancelled."
+  SetErrorLevel 2
+  Abort
+  busy:
+  IfSilent +2
+  MessageBox MB_OK "Close Companion Lite and retry uninstall. Some application files could not be removed."
+  SetErrorLevel 2
+  Abort
   done:
 SectionEnd

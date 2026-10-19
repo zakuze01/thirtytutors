@@ -16,6 +16,7 @@ def main():
     parser.add_argument("--port", type=int, default=0)
     parser.add_argument("--smoke-test", action="store_true")
     parser.add_argument("--smoke-output", type=Path)
+    parser.add_argument("--smoke-seconds", type=int, default=12, choices=range(12, 601), metavar="12..600")
     args = parser.parse_args()
     if sys.stdout is None:
         sys.stdout = open(os.devnull, "w")
@@ -53,7 +54,7 @@ def main():
                 args.smoke_output.write_text(json.dumps(result, indent=2), encoding="utf-8")
                 window.destroy()
 
-            timer = threading.Timer(12, close)
+            timer = threading.Timer(args.smoke_seconds, close)
             timer.daemon = True
             timer.start()
             return window
