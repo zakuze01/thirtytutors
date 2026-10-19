@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "thirtytutors"
 dynamic = ["version"]
-description = "A self-hosted, real-time voice AI language tutor with a 3D talking avatar, built on the Gemini Live API."
+description = "Companion Lite: a personal Windows voice companion and English tutor built on Gemini Live."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [{ name = "Wissam Metawee" }]
-keywords = ["language-learning", "ai-tutor", "gemini", "voice-ai", "talking-avatar", "speech-to-speech"]
+keywords = ["language-learning", "ai-tutor", "gemini", "voice-ai", "speech-to-speech"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
@@ -27,11 +27,7 @@ classifiers = [
     "Framework :: FastAPI",
 ]
 
-# webrtcvad-wheels and resemblyzer are deliberately NOT listed here - see
-# cli.py's bootstrap and requirements.txt's own comment for why they can't
-# be plain dependencies (pip has no way to substitute webrtcvad-wheels for
-# resemblyzer's own webrtcvad requirement). `thirtytutors setup` (or a plain
-# first `thirtytutors` run) installs them separately.
+# Push-to-talk does not install or warm up optional speaker-identification models.
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
@@ -57,9 +53,9 @@ dev = ["pytest", "pytest-asyncio", "pytest-cov", "httpx", "httpx2", "ruff", "lan
 # extra is completely unaffected.
 
 [project.urls]
-Homepage = "https://github.com/wiss84/thirtytutors"
-Repository = "https://github.com/wiss84/thirtytutors"
-Issues = "https://github.com/wiss84/thirtytutors/issues"
+Homepage = "https://github.com/zakuze01/thirtytutors"
+Repository = "https://github.com/zakuze01/thirtytutors"
+Issues = "https://github.com/zakuze01/thirtytutors/issues"
 
 [project.scripts]
 thirtytutors = "thirtytutors.cli:main"
@@ -75,10 +71,7 @@ version = { attr = "thirtytutors.constants.APP_VERSION" }
 include = ["thirtytutors*"]
 
 [tool.setuptools.package-data]
-# Everything under thirtytutors/static/ (UI/, vendor/, pcm-processor.js, the
-# platform icons) ships with the wheel - avatar/voice/photo assets do NOT
-# live here at all (see constants.py's ASSETS_DIR and cli.py) since they're
-# ~300MB and downloaded separately on first run instead.
+# Only the voice-first page, styles, scripts, PCM worklet and icon remain.
 thirtytutors = ["static/**/*", "releases/*.md"]
 
 # ---------------------------------------------------------------------------
