@@ -51,7 +51,7 @@ and acoustic behavior still need real-key/device validation.
 
 ## Executed verification
 
-- Python: **261 passed, 0 failed, 0 skipped**, 74% coverage, 31.72 s.
+- Python: **261 passed, 0 failed, 0 skipped**, 74% coverage, final run 31.74 s.
 - Node: **5 passed, 0 failed**, deterministic PCM tests for silence/click rejection,
   bounded pre-roll, multi-turn/pause boundaries, elevated playback threshold,
   maximum duration and frame-size independence.
@@ -68,7 +68,7 @@ and acoustic behavior still need real-key/device validation.
   continuous listening. New style settings persist via the real local REST API.
 - A pending playback resume canceled by Stop cannot recreate an audio source
   (queued sources remain 0). No console errors/warnings in exercised flows.
-- No horizontal overflow at emulated 500 CSS pixels. This is not native OS DPI QA.
+- No horizontal overflow at emulated 500 or 1440 CSS pixels. This is not native OS DPI QA.
 
 Exact outputs are `test-logs/preview3-*`; `tests/browser_voice_mock.js` is QA-only
 injection and never loaded by the product. It replaces mic/audio/provider fully;

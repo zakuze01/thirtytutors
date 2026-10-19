@@ -1278,7 +1278,8 @@ async def ws_session(websocket: WebSocket):
                                     continue
                                 input_state["active"] = True
                                 # Commit the interrupted reply separately from the new utterance.
-                                await flush_turn_buffer_to_memory(sender)
+                                if turn_buffer["user"] or turn_buffer["tutor"]:
+                                    await flush_turn_buffer_to_memory(sender)
                                 turn_state["awaiting_response"] = False
                                 sender.clear("push-to-talk")
                                 await sender.send_activity_start()
