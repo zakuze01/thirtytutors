@@ -14,6 +14,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from . import memory, scenarios
 from .constants import DEFAULT_VOICE, VOICE_OPTIONS, get_api_voice_name
 from .conversation_policy import ConversationPolicy
+from .groq_provider import GroqProviders, QuotaError
 from .live_session import ACTIVE_SOCKETS
 from .profiles_store import get_profile_by_id
 from .tutor_instructions import build_system_instruction
@@ -26,6 +27,7 @@ class HybridSession:
     def __init__(self, socket, profile, conversation, providers):
         self.socket, self.profile, self.conv, self.providers = socket, profile, conversation, providers
         self.config = dict(conversation["config"])
+        self.groq = self.config.get("voice_provider") == "groq_local"
         self.policy = ConversationPolicy.from_config(self.config)
         self.epoch = memory.conversation_epoch(self.conv["id"])
         self.profile_epoch = memory.privacy_epoch(profile["id"])
@@ -89,10 +91,16 @@ class HybridSession:
         try:
             async with asyncio.timeout(150):
                 await self.emit(
-                    generation, "phase", message="Gemini đang nghe lại câu bạn nói…" if pcm else "DeepSeek đang trả lời…"
+                    generation,
+                    "phase",
+                    message=("Groq đang nghe…" if self.groq else "Gemini đang nghe lại câu bạn nói…")
+                    if pcm
+                    else ("Groq đang trả lời…" if self.groq else "DeepSeek đang trả lời…"),
                 )
                 if pcm is not None:
                     text = await self.providers.transcribe(pcm)
+                    if self.groq:
+                        await self.emit(generation, "quota", stages=self.providers.quota)
                     if not text:
                         await self.emit(generation, "error", message="Chưa nghe rõ lời nói. Bạn thử lại nhé.")
                         return
@@ -105,13 +113,17 @@ class HybridSession:
                     return
                 if pcm is not None:
                     self.append("user", request)
-                await self.emit(generation, "phase", message="DeepSeek đang trả lời…")
+                await self.emit(generation, "phase", message="Groq đang trả lời…" if self.groq else "DeepSeek đang trả lời…")
                 reply = await self.providers.reply(instruction, context, request)
+                if self.groq:
+                    await self.emit(generation, "quota", stages=self.providers.quota)
                 await self.emit(generation, "transcript_out", text=reply)
                 if not self.valid(generation):
                     return
                 self.append("assistant", reply)
-                await self.emit(generation, "phase", message="Gemini đang tạo giọng đọc…")
+                await self.emit(
+                    generation, "phase", message="Đang đọc bằng giọng offline…" if self.groq else "Gemini đang tạo giọng đọc…"
+                )
                 voice = self.config.get("voice_name", DEFAULT_VOICE)
                 if voice not in {v["name"] for v in VOICE_OPTIONS}:
                     raise ProviderError("Giọng đã chọn không hợp lệ. Chọn lại trong Cài đặt.")
@@ -123,7 +135,7 @@ class HybridSession:
         except Exception as exc:
             message = str(exc) if isinstance(exc, ProviderError) else "Luồng voice chưa hoàn tất. Kiểm tra kết nối và thử lại."
             if self.valid(generation):
-                await self.emit(generation, "error", message=message)
+                await self.emit(generation, "quota_exhausted" if isinstance(exc, QuotaError) else "error", message=message)
         finally:
             if self.valid(generation):
                 await self.emit(generation, "turn_complete")
@@ -188,7 +200,7 @@ class HybridSession:
         await self.emit(
             self.generation,
             "session_status",
-            model_name=self.providers.config["deepseek_model"],
+            model_name=self.providers.config["groq_model" if self.groq else "deepseek_model"],
             mode=self.policy.mode,
             resumed=bool(self.turns),
         )
@@ -216,11 +228,16 @@ async def ws_hybrid(websocket: WebSocket):
         if init.get("type") != "init" or not profile or not conv or conv["profile_id"] != profile_id:
             raise ValueError("Invalid profile or conversation")
         config = provider_config(conv["config"])
-        if config["voice_provider"] != "deepseek_gemini":
+        if config["voice_provider"] not in ("deepseek_gemini", "groq_local"):
             raise ValueError("Select DeepSeek + Gemini in Settings first")
-        if not profile.get("api_key") or not profile.get("deepseek_api_key"):
-            raise ProviderError("Chế độ này cần cả Gemini API key và DeepSeek API key trong Cài đặt.")
-        providers = HybridProviders(profile["api_key"], profile["deepseek_api_key"], config)
+        if config["voice_provider"] == "groq_local":
+            if not profile.get("groq_api_key"):
+                raise ProviderError("Nhập Groq API key trong Cài đặt để dùng Groq + giọng offline.")
+            providers = GroqProviders(profile["groq_api_key"], config)
+        else:
+            if not profile.get("api_key") or not profile.get("deepseek_api_key"):
+                raise ProviderError("Chế độ này cần cả Gemini API key và DeepSeek API key trong Cài đặt.")
+            providers = HybridProviders(profile["api_key"], profile["deepseek_api_key"], config)
         session = HybridSession(websocket, profile, conv, providers)
         ACTIVE_SOCKETS.setdefault(profile_id, set()).add(websocket)
         await session.ready()

@@ -3,10 +3,12 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy
 
 root = Path(SPECPATH).parents[1]
 datas = [(str(root / 'thirtytutors/static'), 'thirtytutors/static'),
-         (str(root / 'LICENSE'), '.'), (str(root / 'build/licenses'), 'licenses')]
+         (str(root / 'LICENSE'), '.'), (str(root / 'build/licenses'), 'licenses'),
+         (str(root / 'build/offline-tts'), 'offline-tts')]
 datas += collect_data_files('webview') + copy_metadata('google-genai')
 a = Analysis([str(root / 'thirtytutors/desktop_entry.py')], pathex=[str(root)],
-             datas=datas, binaries=[],
+             datas=datas, binaries=[(str(root/'build/offline-tts/espeak-ng.exe'),'offline-tts'),
+                                    (str(root/'build/offline-tts/libespeak-ng.dll'),'offline-tts')],
              hiddenimports=collect_submodules('google.genai', filter=lambda name: not name.startswith('google.genai.tests')) + ['webview.platforms.winforms', 'webview.platforms.edgechromium', 'win32crypt'],
              excludes=['google.genai.tests','pytest','_pytest','torch','librosa','scipy','resemblyzer','webrtcvad','langfuse','PyQt5','PyQt6','PySide2','PySide6','tkinter','IPython'],
              noarchive=False)

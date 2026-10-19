@@ -54,6 +54,25 @@ from .voice_providers import PROVIDER_DEFAULTS, provider_config
 router = APIRouter()
 
 
+@router.post("/api/local-voice/preview")
+async def local_voice_preview():
+    from .local_tts import LocalSpeech, SpokenReply
+    from .voice_providers import ProviderError
+
+    try:
+        pcm = await LocalSpeech().speak(
+            SpokenReply(
+                [
+                    {"lang": "vi", "text": "Chào bạn! Chuẩn rồi, cố lên nhé."},
+                    {"lang": "en", "text": "Good job! Let's play and learn together."},
+                ]
+            )
+        )
+        return {"data": base64.b64encode(pcm).decode()}
+    except ProviderError:
+        raise HTTPException(503, "Bộ đọc offline chưa sẵn sàng.") from None
+
+
 # --- Reference data endpoints ---
 
 
@@ -341,6 +360,7 @@ async def create_profile(request: Request):
         "name": name,
         "api_key": api_key,
         "deepseek_api_key": (payload.get("deepseek_api_key") or "").strip() or None,
+        "groq_api_key": (payload.get("groq_api_key") or "").strip() or None,
         "langfuse_public_key": None,
         "langfuse_secret_key": None,
         "langfuse_base_url": None,

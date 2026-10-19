@@ -11,13 +11,34 @@ let micAnalyser = null, playbackAnalyser = null, mutedUntilTurn = false;
 let activeTranscript = {}, reconnectDelay = 2000;
 let editingMemoryId = null;
 let voiceProvider = 'gemini_live';
+let quotaBlocked=false;
 let responseStartedAt=0;
 let lastMicMeter=0,micMeterEnergy=0,micMeterSamples=0;
 function updateMicMeter(samples){for(const value of samples)micMeterEnergy+=value*value;micMeterSamples+=samples.length;const now=performance.now();if(now-lastMicMeter<100)return;lastMicMeter=now;const rms=Math.sqrt(micMeterEnergy/Math.max(1,micMeterSamples));micMeterEnergy=0;micMeterSamples=0;$('micLevel').value=Math.min(1,rms/.1);const db=rms>0?Math.max(-96,Math.round(20*Math.log10(rms))): -96;$('micLevelText').textContent=`Mức mic: ${db} dBFS · ${speechActive?'Đang gửi lời nói':rms>=Number($('sensitivity').value)?'Có tín hiệu':'Chưa bắt tiếng · thử mức Nhạy nếu nói nhỏ'}`;}
-function selectedProvider(){return {voice_provider:$('voiceProvider').value,deepseek_model:$('deepseekModel').value,tts_model:$('ttsModel').value,transcription_model:'gemini-3.5-flash-lite'};}
-function providerControls(){const hybrid=$('voiceProvider').value==='deepseek_gemini';$('deepseekSettings').hidden=!hybrid;$('model').disabled=hybrid;$('providerNotice').textContent=hybrid?'Gemini nhận âm thanh; DeepSeek nhận transcript và ngữ cảnh bạn cho phép; Gemini nhận lời đáp để đọc. Hai key lưu riêng bằng mã hóa Windows.':'Gemini Live gửi âm thanh và ngữ cảnh được cho phép đến Google.';}
+function selectedProvider(){return {voice_provider:$('voiceProvider').value,deepseek_model:$('deepseekModel').value,tts_model:$('ttsModel').value,transcription_model:'gemini-3.5-flash-lite',groq_model:$('groqModel').value,groq_transcription_model:$('groqTranscription').value};}
+function providerControls(){const value=$('voiceProvider').value,hybrid=value==='deepseek_gemini',groq=value==='groq_local';$('deepseekSettings').hidden=!hybrid;$('groqSettings').hidden=!groq;$('model').disabled=value!=='gemini_live';$('voice').disabled=groq;$('providerNotice').textContent=groq?'Groq nhận âm thanh, transcript và ngữ cảnh được cho phép. Giọng eSpeak NG tạo offline trên máy; không gọi Gemini. Key lưu bằng mã hóa Windows.':hybrid?'Gemini nhận âm thanh; DeepSeek nhận transcript và ngữ cảnh bạn cho phép; Gemini nhận lời đáp để đọc. Hai key lưu riêng bằng mã hóa Windows.':'Gemini Live gửi âm thanh và ngữ cảnh được cho phép đến Google.';}
 $('voiceProvider').onchange=providerControls;
 const status = text => { $('status').textContent = text; };
+function showQuota(stages){
+  if(voiceProvider!=='groq_local' || quotaBlocked)return;
+  const parts=[];let low=false;
+  for(const [stage,data] of Object.entries(stages || {})){
+    const label=stage==='speech'?'Nghe':'Chat';
+    for(const [kind,unit] of [['requests','lượt/ngày'],['tokens','token/phút']]){
+      const limit=data['limit-'+kind],left=data['remaining-'+kind];
+      if(Number.isSafeInteger(limit) && Number.isSafeInteger(left) && limit>0 && left>=0){parts.push(`${label}: còn ${left}/${limit} ${unit}`);if(left<=limit*.1)low=true;}
+    }
+  }
+  $('quotaPanel').hidden=false;$('quotaText').textContent=(low?'Sắp chạm hạn mức Groq. ':'')+(parts.join(' · ') || 'Groq chưa cung cấp số dư quota trong phản hồi.')+' · Đây là snapshot gần nhất, không phải số dư tiền.';
+}
+$('paidSwitch').onclick=async()=>{
+  if(!quotaBlocked || voiceProvider!=='groq_local')return;
+  const targetProfile=profileId,targetConversation=conversationId;
+  $('paidSwitch').disabled=true;
+  try{const p=await api(`/api/profiles/${targetProfile}`);if(profileId!==targetProfile || conversationId!==targetConversation || !quotaBlocked || voiceProvider!=='groq_local')return;if(!p.has_api_key){status('Cần Gemini API key để chuyển. Nhập key trong Cài đặt.');return;}disconnect();await api(`/api/profiles/${targetProfile}/conversations/${targetConversation}`,'PUT',{voice_provider:'gemini_live'});if(profileId!==targetProfile || conversationId!==targetConversation)return;await chooseConversation(targetConversation);if(profileId===targetProfile && conversationId===targetConversation)connect();}
+  catch(err){showError(err);}finally{$('paidSwitch').disabled=false;}
+};
+$('localPreview').onclick=async()=>{stopRecording();stopAudio();$('localPreview').disabled=true;try{const result=await api('/api/local-voice/preview','POST');mutedUntilTurn=false;await playAudio(result.data);}catch(err){showError(new Error('Chưa phát được giọng offline. Kiểm tra bản cài và loa.'));}finally{$('localPreview').disabled=false;}};
 async function api(path, method = 'GET', data) {
   const response = await fetch(path, {method, headers: {'Content-Type':'application/json'}, body: data === undefined ? undefined : JSON.stringify(data)});
   if (!response.ok) throw new Error(`Yêu cầu không thành công (${response.status}).`);
@@ -54,6 +75,7 @@ async function chooseConversation(id) {
   for (const turn of conv.turns) addTranscript(turn.role, turn.text);
   $('voice').value = conv.config.voice_name; $('model').value = conv.config.model_name;
   voiceProvider=conv.config.voice_provider || 'gemini_live';$('voiceProvider').value=voiceProvider;$('deepseekModel').value=conv.config.deepseek_model || 'deepseek-flash';$('ttsModel').value=conv.config.tts_model || 'gemini-3.8-flash-lite-tts';providerControls();
+  $('groqModel').value=conv.config.groq_model || 'openai/gpt-oss-20b';$('groqTranscription').value=conv.config.groq_transcription_model || 'whisper-large-v3-turbo';
   $('difficulty').value = conv.config.difficulty;
   $('mode').value = conv.config.mode || 'friend'; $('replyLanguage').value = conv.config.reply_language_preference || 'balanced';
   $('correction').value = conv.config.correction_intensity || 'gentle'; $('pace').value = conv.config.speech_pace || 'natural';
@@ -79,8 +101,8 @@ function disconnect() {
 }
 function connect() {
   if (!conversationId) return;
-  disconnect(); status(voiceProvider==='deepseek_gemini'?'Đang chuẩn bị DeepSeek + Gemini':'Đang kết nối đến Gemini');
-  const route=voiceProvider==='deepseek_gemini'?'hybrid':'session';
+  disconnect();quotaBlocked=false;$('quotaPanel').hidden=voiceProvider!=='groq_local';$('paidSwitch').hidden=true;$('quotaText').textContent='Groq: chưa có dữ liệu quota. Hạn mức theo tài khoản; app không xác minh được gói Free/trả phí.';status(voiceProvider==='groq_local'?'Đang chuẩn bị Groq + giọng offline':voiceProvider==='deepseek_gemini'?'Đang chuẩn bị DeepSeek + Gemini':'Đang kết nối đến Gemini');
+  const route=voiceProvider==='gemini_live'?'session':'hybrid';
   const s = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/${route}`); socket = s;
   let turnError=false;
   s.onopen = () => s.send(JSON.stringify({type:'init', profile_id:profileId, conversation_id:conversationId}));
@@ -99,6 +121,8 @@ function connect() {
     else if (msg.type === 'transcript_in') addTranscript('user', msg.text, true);
     else if (msg.type === 'transcript_out') addTranscript('model', msg.text, true);
     else if (msg.type === 'turn_complete') { if(!speechActive){activeTranscript = {}; mutedUntilTurn = false; if(!turnError)status(continuous?'Listening · Micro đang bật, bạn cứ nói':'Listening · Sẵn sàng');} turnError=false;loadHistory().catch(showError); }
+    else if (msg.type === 'quota') {showQuota(msg.stages);}
+    else if (msg.type === 'quota_exhausted') {turnError=true;quotaBlocked=true;stopRecording('Groq đang bị giới hạn');stopAudio();$('quotaPanel').hidden=false;$('quotaText').textContent=msg.message;$('paidSwitch').hidden=false;$('quotaPanel').scrollIntoView({block:'center'});status(msg.message);}
     else if (msg.type === 'error') { turnError=true;status('Error · ' + msg.message); }
     else if (msg.type === 'phase') {turnError=false;status(msg.message);}
     else if (msg.type === 'waiting_long') status(msg.active ? 'Thinking · Đang chờ Gemini' : 'Đã kết nối');
@@ -128,8 +152,8 @@ function encodePCM(samples) {
   return btoa(binary);
 }
 function captureControls(){
-  $('talk').disabled=!connected || continuous;
-  $('listen').disabled=!connected;
+  $('talk').disabled=!connected || continuous || quotaBlocked;
+  $('listen').disabled=!connected || quotaBlocked;
   $('listen').setAttribute('aria-pressed',String(continuous && recording));
   $('listen').textContent=pendingPress?'Hủy mở mic':continuous?'Tắt mic': 'Bật nghe liên tục';
 }
@@ -143,7 +167,7 @@ function endSpeech(){
   speechActive=false;responseStartedAt=performance.now();send({type:'turn_complete'});status('Thinking · Đang chờ');
 }
 async function startRecording(handsFree=false) {
-  if (pendingPress || recording || !connected) return;
+  if (pendingPress || recording || !connected || quotaBlocked) return;
   continuous=handsFree;
   pendingPress = true; const generation = ++pressGeneration;captureControls();
   $('micStatus').textContent='Đang mở micro · nếu có hộp quyền, chọn Allow / Cho phép. Nếu mic vẫn tắt sau đó, bấm bật lại.';
@@ -225,8 +249,8 @@ window.addEventListener('blur',()=>stopRecording('Bạn vừa chuyển cửa s�
 document.addEventListener('keydown', e => {if (e.code === 'Escape') {stopRecording();stopAudio();} if (e.code === 'Space' && !continuous && !e.repeat && (!$('settings').open && !$('memoryDialog').open) && (e.target===$('talk') || !['INPUT','TEXTAREA','SELECT','BUTTON'].includes(e.target.tagName))) {e.preventDefault();startRecording();}});
 document.addEventListener('keyup', e => {if (e.code === 'Space' && !continuous) stopRecording();});
 $('stopAudio').onclick = stopAudio; $('retry').onclick = connect;
-$('settingsButton').onclick = async () => {stopRecording();if(profileId){const p=await api(`/api/profiles/${profileId}`);$('nickname').value=p.name;$('apiKey').placeholder=p.has_api_key?'Đã lưu an toàn · để trống để giữ key':'Nhập Gemini API key';$('deepseekKey').placeholder=p.has_deepseek_api_key?'Đã lưu an toàn · để trống để giữ key':'Nhập DeepSeek API key';}providerControls();$('settings').showModal();}; $('closeSettings').onclick = () => {$('apiKey').value='';$('deepseekKey').value='';$('settings').close();};
-$('settings').addEventListener('close',()=>{$('apiKey').value='';$('deepseekKey').value='';});
+$('settingsButton').onclick = async () => {stopRecording();if(profileId){const p=await api(`/api/profiles/${profileId}`);$('nickname').value=p.name;$('apiKey').placeholder=p.has_api_key?'Đã lưu an toàn · để trống để giữ key':'Nhập Gemini API key';$('deepseekKey').placeholder=p.has_deepseek_api_key?'Đã lưu an toàn · để trống để giữ key':'Nhập DeepSeek API key';$('groqKey').placeholder=p.has_groq_api_key?'Đã lưu an toàn · để trống để giữ key':'Nhập Groq API key';}providerControls();$('settings').showModal();}; $('closeSettings').onclick = () => {$('apiKey').value='';$('deepseekKey').value='';$('groqKey').value='';$('settings').close();};
+$('settings').addEventListener('close',()=>{$('apiKey').value='';$('deepseekKey').value='';$('groqKey').value='';});
 $('showTranscript').onchange = () => $('transcript').hidden = !$('showTranscript').checked;
 $('newConversation').onclick = () => newConversation().catch(showError);
 $('profile').onchange = async () => {disconnect();profileId=$('profile').value;localStorage.setItem('companionProfile',profileId);const data=await loadHistory();if(data.conversations.length)await chooseConversation(data.active_conversation_id || data.conversations[0].id);else await newConversation();};
@@ -238,10 +262,11 @@ async function saveSettings(forceNew=false){
     if(playback){await playback.close();playback=null;playbackBus=null;nextPlayback=0;}
     if($('apiKey').value)fields.api_key=$('apiKey').value;
     if($('deepseekKey').value)fields.deepseek_api_key=$('deepseekKey').value;
+    if($('groqKey').value)fields.groq_api_key=$('groqKey').value;
     if(!profileId||forceNew){const p=await api('/api/profiles','POST',fields);profileId=p.id;localStorage.setItem('companionProfile',p.id);option($('profile'),p.id,p.name);$('profile').value=p.id;conversationId='';await newConversation();}
     else {await api(`/api/profiles/${profileId}`,'PUT',fields);if(conversationId){await api(`${basePath()}/${conversationId}`,'PUT',{...selectedPolicy(),...selectedProvider(),voice_name:$('voice').value,model_name:$('model').value,scenario:$('scenario').value});await chooseConversation(conversationId);}}
     if($('profile').selectedOptions[0])$('profile').selectedOptions[0].textContent=fields.name;
-    $('apiKey').value='';$('deepseekKey').value='';$('settings').close();await loadHistory();if(wasConnected)connect();else status('Đã lưu · chọn Kết nối để bắt đầu.');
+    $('apiKey').value='';$('deepseekKey').value='';$('groqKey').value='';$('settings').close();await loadHistory();if(wasConnected)connect();else status('Đã lưu · chọn Kết nối để bắt đầu.');
   }catch(err){showError(err);}
 }
 $('settingsForm').onsubmit=e=>{e.preventDefault();saveSettings();};$('createProfile').onclick=()=>{if($('settingsForm').reportValidity())saveSettings(true);};

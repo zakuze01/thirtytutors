@@ -67,6 +67,8 @@ into chat/transcripts or diagnostic reports.
 Build locally: create a clean Python 3.13 x64 venv; install
 `packaging/windows/requirements-build.lock.txt`, then `pip install -e . --no-deps`.
 Run `python packaging/windows/prepare_licenses.py`, then
+`python packaging/windows/prepare_local_tts.py` (downloads pinned official
+eSpeak NG CLI/data and complete corresponding source into build/), then
 `pyinstaller packaging/windows/CompanionLite.spec --noconfirm`.
 Compile `packaging/windows/installer.nsi` with the NSIS compiler. No publication step
 exists. Preserve build manifest/checksum and complete live/clean-Windows QA before
@@ -82,3 +84,23 @@ hai key được mã hóa riêng bằng Windows DPAPI. Google nhận âm thanh v
 đọc; DeepSeek nhận transcript và ngữ cảnh bạn cho phép. Luồng ba bước có thể chậm
 hơn Live và không bảo đảm miễn phí. Gemini Live vẫn là lựa chọn mặc định.
 Xem `docs/08_DEEPSEEK_VOICE_REPORT.md` để biết giới hạn và bằng chứng kiểm thử.
+
+# Groq + giọng offline (preview 8)
+
+Cài đặt / Profile → **Groq nghe/trả lời + giọng offline** → nhập **Groq API key**
+→ Lưu → Kết nối → bật mic. Không cần Gemini key cho chế độ này. Dùng nút **Thử
+giọng offline · không gọi API** để nghe mẫu Việt–Anh trước. Giọng eSpeak NG có âm
+sắc máy, không tương đương giọng Gemini. Phần nghe/trả lời vẫn cần mạng đến Groq.
+
+Groq chỉ miễn phí trong hạn mức tài khoản Free; app không xác minh được gói tài
+khoản. Key thuộc gói Developer có thể bị tính phí ngay. Snapshot quota từ header
+API không phải số dư tiền và không dự báo được mọi giới hạn audio/giây/phút.
+HTTP 429/402 dừng yêu cầu, tắt mic và hiện cảnh báo. Chỉ bấm **Chuyển sang Gemini ·
+CÓ TÍNH PHÍ** nếu muốn dùng key Gemini đã lưu. Không tự chuyển, không tự gửi lại
+lượt lỗi, không tự bật mic. Retry là thao tác thử Groq lại; app không nâng cấp gói.
+
+Groq key được mã hóa riêng bằng DPAPI và loại khỏi backup portable. Giọng offline
+được tạo trong RAM bằng chương trình CLI độc lập eSpeak NG 1.52.0 (GPL-3.0-or-later).
+License, thông báo và toàn bộ source tương ứng nằm trong `_internal/offline-tts/`
+của bản cài. Đây là thành phần riêng; license nguồn Companion Lite giữ nguyên.
+Xem `docs/12_GROQ_OFFLINE_REPORT.md` để biết giới hạn và kết quả kiểm thử.

@@ -8,7 +8,7 @@ import os
 import sys
 from pathlib import Path
 
-SECRET_FIELDS = ("api_key", "deepseek_api_key", "langfuse_public_key", "langfuse_secret_key")
+SECRET_FIELDS = ("api_key", "deepseek_api_key", "groq_api_key", "langfuse_public_key", "langfuse_secret_key")
 
 
 def protect(data: bytes) -> bytes:
@@ -63,4 +63,6 @@ def public_profile(profile: dict) -> dict:
     result["has_api_key"] = bool(profile.get("api_key"))
     result["deepseek_api_key"] = None
     result["has_deepseek_api_key"] = bool(profile.get("deepseek_api_key"))
+    result["groq_api_key"] = None
+    result["has_groq_api_key"] = bool(profile.get("groq_api_key"))
     return result
