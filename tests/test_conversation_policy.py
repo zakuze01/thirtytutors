@@ -82,3 +82,33 @@ def test_explicit_vietnamese_preference_and_no_translation_of_every_sentence():
     assert "Default to Vietnamese" in text
     assert "all-Vietnamese" in text
     assert "Do not translate every sentence" in text
+
+
+def test_opted_in_retry_keeps_one_target_waits_for_evidence_and_allows_exit():
+    text = prompt(ConversationPolicy(practice_style="repeat_until_clear"))
+    assert "choose ONE short target phrase" in text
+    assert "WAIT for the user's next turn" in text
+    assert "Keep that same target across retries" in text
+    assert "Never fabricate a successful retry" in text
+    assert "bỏ qua" in text and "dừng luyện" in text
+    assert "could not hear reliably" in text
+
+
+def test_corrections_off_overrides_repeat_practice():
+    text = prompt(ConversationPolicy(practice_style="repeat_until_clear", correction_intensity="off"))
+    assert "choose ONE short target phrase" not in text
+    assert "Corrections off disables retry practice" in text
+
+
+def test_cheeky_style_targets_situation_not_learner():
+    text = prompt(ConversationPolicy(humor_style="cheeky"))
+    assert "nhây hài" in text
+    assert "learner is never the target" in text
+    assert "stop joking" in text
+    assert "nhây hài" not in prompt(ConversationPolicy(humor_style="gentle"))
+
+
+@pytest.mark.parametrize("config", [{"humor_style": "insult"}, {"practice_style": "block_forever"}])
+def test_invalid_new_style_is_rejected(config):
+    with pytest.raises(ValueError):
+        ConversationPolicy.from_config(config)

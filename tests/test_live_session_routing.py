@@ -159,6 +159,51 @@ def test_policy_switch_mid_response_preserves_turns_and_clears_old_session(monke
     assert memory.get_conversation(conv["id"])["config"]["mode"] == "teacher"
 
 
+def test_barge_in_drops_stale_audio_and_keeps_interrupted_turn_separate(ws_app, make_profile, make_conversation):
+    profile = make_profile(api_key="fake-key")
+    conv = make_conversation(profile["id"])
+
+    class BargeInSession(FakeLiveSession):
+        async def receive(self):
+            if self._served:
+                await self._exhausted.wait()
+                return
+            self._served = True
+            yield _response(server_content=_server_content(output_text="Old reply"), data=b"old-audio")
+            while not any("activity_start" in x for x in self.sent_realtime_inputs):
+                await asyncio.sleep(0.01)
+            yield _response(server_content=SimpleNamespace(interrupted=True))
+            yield _response(server_content=_server_content(output_text="stale", turn_complete=True), data=b"stale-audio")
+            yield _response(server_content=_server_content(input_text="I want water"))
+            while not any("activity_end" in x for x in self.sent_realtime_inputs):
+                await asyncio.sleep(0.01)
+            yield _response(server_content=_server_content(output_text="Here you go"), data=b"new-audio")
+            yield _response(server_content=_server_content(turn_complete=True))
+
+    session = BargeInSession()
+    client = ws_app(session)
+    with client.websocket_connect("/ws/session") as ws:
+        ws.send_json({"type": "init", "profile_id": profile["id"], "conversation_id": conv["id"]})
+        assert ws.receive_json()["type"] == "session_status"
+        assert ws.receive_json()["data"] == base64.b64encode(b"old-audio").decode()
+        assert ws.receive_json()["text"] == "Old reply"
+        ws.send_json({"type": "start_turn"})
+        ws.send_json({"type": "start_turn"})  # duplicate local boundary is harmless
+        ws.send_json({"type": "audio_chunk", "data": base64.b64encode(b"\x00\x01" * 50).decode()})
+        assert ws.receive_json() == {"type": "interrupted"}
+        assert ws.receive_json() == {"type": "transcript_in", "text": "I want water"}
+        ws.send_json({"type": "turn_complete"})
+        ws.send_json({"type": "turn_complete"})
+        assert ws.receive_json()["data"] == base64.b64encode(b"new-audio").decode()
+        assert ws.receive_json()["text"] == "Here you go"
+        assert ws.receive_json()["type"] == "turn_complete"
+        ws.send_json({"type": "close"})
+    turns = memory.get_turns(conv["id"])
+    assert [t["text"] for t in turns] == ["Old reply", "I want water", "Here you go"]
+    assert sum("activity_start" in x for x in session.sent_realtime_inputs) == 1
+    assert sum("activity_end" in x for x in session.sent_realtime_inputs) == 1
+
+
 def _server_content(input_text=None, output_text=None, turn_complete=False):
     return SimpleNamespace(
         input_transcription=SimpleNamespace(text=input_text) if input_text else None,

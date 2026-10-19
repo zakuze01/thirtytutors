@@ -21,6 +21,23 @@ save Settings, then reconnect. The companion uses short Vietnamese bridges and
 small English phrases, with occasional gentle humor; actual speech quality still
 requires live testing. This level does not assume the user's age.
 
+Preview 3 adds Độ nhây > Nhây hài and Luyện nói > Luyện đến khi rõ. With corrections
+enabled (Gentle or Active), AI models one short target and asks for retries until
+the wording is understandable. Say 'bỏ qua' or 'dừng luyện' to leave practice.
+Off disables corrections/retries. Actual assessment follows Gemini's observations,
+not a guaranteed pronunciation score.
+
+For hands-free conversation, connect then click Bật nghe liên tục once. The mic
+stays on between turns; local sound detection opens a turn and 800 ms of silence
+closes it. Speaking during playback stops queued AI audio. Click Tắt mic or press
+Escape to stop capture (Escape also stops audio). Changing windows, opening Settings,
+disconnect/reconnect and permission/device loss stop capture; explicitly enable it
+again afterward. It never turns on at startup or reconnect by itself. Set Độ nhạy
+nghe for the room. Nearby voices/noise can trigger this energy detector; it does
+not identify speakers. Use headphones if speaker echo causes unwanted interruption.
+No continuous recording is saved. Speech segments and a short local pre-roll are
+sent to Google when detected. Real device/echo/barge-in quality still needs live QA.
+
 The app does not promise exact speech-rate control or transcript-based pronunciation
 scores. Real model/voice quality still needs live acceptance. Voice preview is online,
 user initiated and uses your quota. No avatar, video or speaker-model downloads occur.

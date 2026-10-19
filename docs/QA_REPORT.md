@@ -2,6 +2,10 @@
 
 **V1 acceptance is INCOMPLETE. Private local QA preview only.**
 
+Preview 3 adds cheeky humor, opt-in repeat practice and continuous microphone with
+barge-in: 261 Python tests and 5 Node PCM/VAD tests pass. See
+`07_CONTINUOUS_VOICE_REPORT.md`. Real mic/echo/provider acceptance remains pending.
+
 Latest preview 2 adjusts Friend Mode for playful beginner Vietnamese–English
 conversation: 254 tests passed, 74% coverage; see `06_BILINGUAL_PLAY_REPORT.md`.
 The milestone table below is the historical initial-preview evidence.

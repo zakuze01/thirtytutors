@@ -81,7 +81,14 @@ def test_settings_policy_persists_without_an_active_provider(make_profile, make_
     path = f"/api/profiles/{profile['id']}/conversations/{conv['id']}"
     assert (
         client.put(
-            path, json={"mode": "teacher", "reply_language_preference": "vietnamese_first", "memory_policy": "off"}
+            path,
+            json={
+                "mode": "teacher",
+                "reply_language_preference": "vietnamese_first",
+                "memory_policy": "off",
+                "humor_style": "cheeky",
+                "practice_style": "repeat_until_clear",
+            },
         ).status_code
         == 200
     )
@@ -89,4 +96,6 @@ def test_settings_policy_persists_without_an_active_provider(make_profile, make_
     assert config["mode"] == "teacher"
     assert config["reply_language_preference"] == "vietnamese_first"
     assert config["memory_policy"] == "off"
+    assert config["humor_style"] == "cheeky"
+    assert config["practice_style"] == "repeat_until_clear"
     assert client.put(path, json={"mode": "invalid"}).status_code == 400

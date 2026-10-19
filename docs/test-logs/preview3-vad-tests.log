@@ -1,0 +1,13 @@
+✔ idle and short click send no turn; pre-roll remains bounded (11.6173ms)
+✔ speech includes pre-roll and survives a natural short pause (2.8143ms)
+✔ playback raises threshold but louder barge-in is accepted (0.6506ms)
+✔ continuous sound has a bounded maximum turn (1.149ms)
+✔ turn boundaries use PCM duration, independent of packet size (3.0526ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 114.2476

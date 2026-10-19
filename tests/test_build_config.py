@@ -49,6 +49,12 @@ def test_build_config_has_no_avatar_or_unsolicited_quiz_tools():
     assert _tool_function_names(config) == set()
 
 
+def test_manual_speech_start_is_configured_to_interrupt_the_model():
+    config = live_session.build_config(_minimal_profile(), _minimal_conv_config(), "gemini-3.1-flash-live-preview")
+    assert config.realtime_input_config.automatic_activity_detection.disabled is True
+    assert config.realtime_input_config.activity_handling == live_session.types.ActivityHandling.START_OF_ACTIVITY_INTERRUPTS
+
+
 def test_build_config_omits_spaced_repetition_block_without_review_terms():
     config = live_session.build_config(_minimal_profile(), _minimal_conv_config(), "gemini-2.5-flash-native-audio-latest")
     assert "Trouble spots" not in _system_instruction_text(config)

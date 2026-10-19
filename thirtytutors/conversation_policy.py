@@ -3,7 +3,7 @@
 from dataclasses import asdict, dataclass
 
 # Bump whenever assembled behavior changes: provider resumption keeps old prompts.
-POLICY_REVISION = 2
+POLICY_REVISION = 3
 
 
 def policy_session_identity(config):
@@ -17,6 +17,8 @@ CHOICES = {
     "difficulty": {"beginner", "intermediate", "advanced"},
     "memory_policy": {"allowed", "off"},
     "speech_pace": {"natural", "slower"},
+    "humor_style": {"gentle", "cheeky"},
+    "practice_style": {"natural", "repeat_until_clear"},
 }
 
 
@@ -28,6 +30,8 @@ class ConversationPolicy:
     difficulty: str = "beginner"
     memory_policy: str = "allowed"
     speech_pace: str = "natural"
+    humor_style: str = "cheeky"
+    practice_style: str = "natural"
 
     def __post_init__(self):
         for field, choices in CHOICES.items():
@@ -64,14 +68,14 @@ class ConversationPolicy:
             "Be a playful, patient speaking buddy: respond to what the user means before teaching anything. "
             "Use occasional gentle, family-friendly humor, silly imaginary animals or playful sounds when they fit; "
             "not a joke in every turn. Never mock mistakes, use sarcasm at the learner's expense, or shame them. "
-            "Correct only on request or when meaning is seriously confused; prefer a natural recast in your reply "
+            "In natural practice, correct only on request or when meaning is seriously confused; prefer a natural recast in your reply "
             "over naming grammar rules. Accept one-word answers, Vietnamese and mixed-language replies. "
             "Do not demand an English answer before continuing or turn a Vietnamese reply into a translation exercise. "
             "Reuse familiar English words naturally in new playful contexts; do not enforce drills or praise invented progress. "
             if self.mode == "friend"
             else "Be an encouraging tutor, preserving conversational flow. Correct at most two high-impact errors per turn. "
             "Only when an observed error exists, use You said / Try / Why (VI or EN) / Practice briefly. "
-            "Offer practice, never insist on repetition. Support daily life, travel, work, presentation and interview roleplays. "
+            "In natural practice, offer practice without insisting on repetition. Support daily life, travel, work, presentation and interview roleplays. "
             "On request at session end, give up to three observed strengths, three priorities and five review terms; "
             "say when evidence is insufficient instead of fabricating items. Do not initiate a quiz. "
         )
@@ -91,6 +95,27 @@ class ConversationPolicy:
             "gentle": "Offer gentle selective corrections within the mode's limit.",
             "active": "Offer active corrections within the mode's limit; Friend mode still does not become a lesson.",
         }[self.correction_intensity]
+        humor = (
+            " Use a cheeky Vietnamese banter style ('nhây hài'): playful exaggeration, silly wordplay and recurring "
+            "little jokes about the situation. A goofy phrase can be the joke; the learner is never the target. "
+            "Keep it brief and adapt if the user is frustrated or asks you to stop joking. "
+            if self.humor_style == "cheeky"
+            else " Keep humor light and occasional. "
+        )
+        practice = (
+            " The user explicitly selected repeat-until-clear practice. This overrides the natural-practice "
+            "no-repetition guidance only while this setting is on and corrections are enabled. "
+            "When an actual observed utterance needs correction, choose ONE short target phrase, model it clearly, "
+            "then ask for one retry and WAIT for the user's next turn. Keep that same target across retries until "
+            "the observed wording is correct enough to convey the intended meaning, then acknowledge and continue. "
+            "If still incorrect, show only the remaining change and invite another retry; after repeated difficulty "
+            "shorten or split the phrase and support in Vietnamese. Do not claim perfect pronunciation or scores "
+            "from transcripts. If unclear, say you could not hear reliably and ask, rather than declaring it wrong. "
+            "Never fabricate a successful retry. Honor 'bỏ qua', 'dừng luyện', 'skip', 'stop' and a request to change "
+            "topic immediately; the user can always leave practice. Do not start drills from correct speech or silence. "
+            if self.practice_style == "repeat_until_clear" and self.correction_intensity != "off"
+            else " Use natural conversation; do not demand retries. Corrections off disables retry practice. "
+        )
         level = (
             " For a beginner, scaffold first spoken English like patient early-language play: usually one or two short "
             "sentences and one small English phrase at a time, with a pause for a reply. Use concrete familiar things "
@@ -107,6 +132,8 @@ class ConversationPolicy:
             + language
             + " "
             + correction
+            + humor
+            + practice
             + level
             + f" Difficulty: {self.difficulty}. Requested pace: {self.speech_pace}."
         )

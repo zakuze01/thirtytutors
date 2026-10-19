@@ -322,7 +322,8 @@ def build_config(
             )
         ),
         "realtime_input_config": types.RealtimeInputConfig(
-            automatic_activity_detection=types.AutomaticActivityDetection(disabled=True)
+            automatic_activity_detection=types.AutomaticActivityDetection(disabled=True),
+            activity_handling=types.ActivityHandling.START_OF_ACTIVITY_INTERRUPTS,
         ),
         "session_resumption": session_resumption_config,
     }
@@ -1060,6 +1061,8 @@ async def ws_session(websocket: WebSocket):
     # reset to False at every point below where live_session is replaced
     # (a fresh Gemini session has no memory of the old one's open turn).
     hf_state = {"active": False, "buffer": bytearray(), "turn_active": False}
+    # Both PTT and the lightweight browser VAD use manual activity boundaries.
+    input_state = {"active": False}
 
     # Tracks whether a turn is currently awaiting a response from Gemini -
     # set the moment activity_end is sent (push-to-talk's "turn_complete"
@@ -1271,12 +1274,21 @@ async def ws_session(websocket: WebSocket):
                                 )
                                 turn_state.update(awaiting_response=True, started_at=time.monotonic(), waiting_long_sent=False)
                             elif msg_type == "start_turn":
+                                if input_state["active"]:
+                                    continue
+                                input_state["active"] = True
+                                # Commit the interrupted reply separately from the new utterance.
+                                await flush_turn_buffer_to_memory(sender)
+                                turn_state["awaiting_response"] = False
                                 sender.clear("push-to-talk")
                                 await sender.send_activity_start()
                             elif msg_type == "audio_chunk":
                                 pcm_bytes = base64.b64decode(msg["data"])
                                 await sender.send_audio(pcm_bytes, "push-to-talk")
                             elif msg_type == "turn_complete":
+                                if not input_state["active"]:
+                                    continue
+                                input_state["active"] = False
                                 await sender.send_activity_end()
                                 turn_state["awaiting_response"] = True
                                 turn_state["started_at"] = time.monotonic()
@@ -1426,27 +1438,20 @@ async def ws_session(websocket: WebSocket):
                                 print(f"[ws_session] go_away received: {go_away}")
                                 continue
 
-                            if go_away_pending and sc and getattr(sc, "turn_complete", False):
+                            if go_away_pending and sc and getattr(sc, "turn_complete", False) and not input_state["active"]:
                                 go_away_pending = False
                                 turn_state["awaiting_response"] = False
                                 await flush_turn_buffer_to_memory(sender)
                                 await websocket.send_json({"type": "turn_complete"})
                                 return "go_away"
 
-                            # Logged only, no client action. Google's docs
-                            # describe this as meaning a genuine barge-in, but
-                            # also note it can fire with zero client-side
-                            # activity (a "phantom interrupt"). This app's mic
-                            # never forwards audio to Gemini while the tutor is
-                            # speaking, in push-to-talk or hands-free (see
-                            # audio.js/websocket.js), so a genuine barge-in
-                            # can't happen here - every occurrence is a phantom
-                            # one, kept visible here in case the frequency ever
-                            # becomes worth investigating further.
+                            # Barge-in must cancel queued client playback. Late model
+                            # output from the interrupted generation is ignored while
+                            # manual input is open; input transcription is retained.
                             if sc and getattr(sc, "interrupted", False):
                                 await websocket.send_json({"type": "interrupted"})
 
-                            if getattr(response, "data", None):
+                            if getattr(response, "data", None) and not input_state["active"]:
                                 await websocket.send_json(
                                     {
                                         "type": "audio",
@@ -1462,7 +1467,7 @@ async def ws_session(websocket: WebSocket):
 
                             out_transcript = getattr(sc, "output_transcription", None) if sc else None
                             out_text = getattr(out_transcript, "text", None) if out_transcript else None
-                            if out_text:
+                            if out_text and not input_state["active"]:
                                 turn_buffer["tutor"].append(out_text)
                                 await websocket.send_json({"type": "transcript_out", "text": out_text})
 
@@ -1561,7 +1566,7 @@ async def ws_session(websocket: WebSocket):
                                     print(f"[ws_session] storing new resumption handle for conversation={conv['id']!r}")
                                     memory.set_resumption(conv["id"], new_handle, _config_identity)
 
-                            if sc and getattr(sc, "turn_complete", False):
+                            if sc and getattr(sc, "turn_complete", False) and not input_state["active"]:
                                 turn_state["awaiting_response"] = False
                                 await flush_turn_buffer_to_memory(sender)
                                 await websocket.send_json({"type": "turn_complete"})
@@ -1751,6 +1756,7 @@ async def ws_session(websocket: WebSocket):
                 resumption_handle = connect_result["resumption_handle"]
                 resumed = resumption_handle is not None and not handle_was_dropped
                 hf_state["turn_active"] = False  # the new Gemini session has no open turn from the old one
+                input_state["active"] = False
                 if turn_state["awaiting_response"]:
                     # A turn was still outstanding when the old session died
                     # (its audio just got replayed onto the new one, above) -

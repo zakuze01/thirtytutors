@@ -5,6 +5,7 @@ const $ = id => document.getElementById(id);
 let profileId = localStorage.getItem('companionProfile') || '';
 let conversationId = '', socket = null, retryTimer = null, connected = false;
 let capture = null, recording = false, pendingPress = false, pressGeneration = 0;
+let continuous = false, speechActive = false, voiceGate = null, playbackGeneration = 0;
 let playback = null, playbackBus = null, nextPlayback = 0, sources = new Set();
 let micAnalyser = null, playbackAnalyser = null, mutedUntilTurn = false;
 let activeTranscript = {}, reconnectDelay = 2000;
@@ -48,6 +49,7 @@ async function chooseConversation(id) {
   $('difficulty').value = conv.config.difficulty;
   $('mode').value = conv.config.mode || 'friend'; $('replyLanguage').value = conv.config.reply_language_preference || 'balanced';
   $('correction').value = conv.config.correction_intensity || 'gentle'; $('pace').value = conv.config.speech_pace || 'natural';
+  $('humor').value=conv.config.humor_style || 'cheeky'; $('practice').value=conv.config.practice_style || 'natural';
   $('remember').checked = conv.config.memory_policy === 'allowed'; $('scenario').value=conv.config.scenario || 'free_learning';
   const profile=await api(`/api/profiles/${profileId}`);$('nickname').value=profile.name;
   if(profile.mic_device_id && !$('mic').querySelector(`option[value="${CSS.escape(profile.mic_device_id)}"]`))option($('mic'),profile.mic_device_id,profile.mic_label||'Micro đã lưu');
@@ -76,19 +78,20 @@ function connect() {
     if (s !== socket) return;
     const msg = JSON.parse(event.data);
     if (msg.type === 'session_status') {
-      connected = !msg.unavailable; $('talk').disabled = !connected;
+      if(recording || pendingPress)stopRecording();
+      connected = !msg.unavailable; captureControls();
       if (connected) { reconnectDelay = 2000; mutedUntilTurn=false; $('mode').value=msg.mode || 'friend'; policyControls(false); status('Listening · Sẵn sàng'); if(!$('transcript').childElementCount && !msg.resumed)send({type:'session_open'}); }
-    } else if (msg.type === 'policy_pending') { connected=false; $('talk').disabled=true; status('Reconnecting · Đang đổi chế độ');
-    } else if (msg.type === 'audio') { if (!mutedUntilTurn) playAudio(msg.data).catch(showError); }
-    else if (msg.type === 'interrupted') { stopAudio(); mutedUntilTurn = false; }
+    } else if (msg.type === 'policy_pending') { stopRecording(); connected=false; captureControls(); status('Reconnecting · Đang đổi chế độ');
+    } else if (msg.type === 'audio') { if (!mutedUntilTurn && !speechActive) playAudio(msg.data).catch(showError); }
+    else if (msg.type === 'interrupted') { stopAudio(); mutedUntilTurn = false; delete activeTranscript.model; }
     else if (msg.type === 'quiz_resume') send({type:'quiz_skip',quiz_id:msg.quiz_id});
     else if (msg.type === 'transcript_in') addTranscript('user', msg.text, true);
     else if (msg.type === 'transcript_out') addTranscript('model', msg.text, true);
-    else if (msg.type === 'turn_complete') { activeTranscript = {}; mutedUntilTurn = false; status('Listening · Sẵn sàng'); loadHistory().catch(showError); }
+    else if (msg.type === 'turn_complete') { if(!speechActive){activeTranscript = {}; mutedUntilTurn = false; status(continuous?'Listening · Micro đang bật, bạn cứ nói':'Listening · Sẵn sàng');} loadHistory().catch(showError); }
     else if (msg.type === 'error') { status('Error · ' + msg.message); }
     else if (msg.type === 'waiting_long') status(msg.active ? 'Thinking · Đang chờ Gemini' : 'Đã kết nối');
   };
-  s.onerror = () => status('Error · Không thể kết nối. Chọn Retry.');
+  s.onerror = () => {stopRecording();status('Error · Không thể kết nối. Chọn Retry.');};
   s.onclose = () => {
     if (s !== socket || s.manual) return;
     connected = false; $('talk').disabled = true; policyControls(false); stopRecording(); stopAudio();
@@ -97,14 +100,14 @@ function connect() {
   };
 }
 function send(msg) { if (socket?.readyState === WebSocket.OPEN && connected) socket.send(JSON.stringify(msg)); }
-function selectedPolicy() { return {mode:$('mode').value,reply_language_preference:$('replyLanguage').value,correction_intensity:$('correction').value,difficulty:$('difficulty').value,speech_pace:$('pace').value,memory_policy:$('remember').checked?'allowed':'off'}; }
-function policyControls(disabled){for(const id of ['mode','replyLanguage','correction','pace','remember'])$(id).disabled=disabled;}
+function selectedPolicy() { return {mode:$('mode').value,reply_language_preference:$('replyLanguage').value,correction_intensity:$('correction').value,difficulty:$('difficulty').value,speech_pace:$('pace').value,memory_policy:$('remember').checked?'allowed':'off',humor_style:$('humor').value,practice_style:$('practice').value}; }
+function policyControls(disabled){for(const id of ['mode','replyLanguage','correction','pace','remember','humor','practice'])$(id).disabled=disabled;}
 async function changePolicy() {
   if (!conversationId) return;
   if (!connected) {try{await api(`${basePath()}/${conversationId}`,'PUT',selectedPolicy());status('Đã lưu. Kết nối để bắt đầu.');}catch(err){showError(err);}return;}
   stopRecording();stopAudio();send({type:'policy_change',policy:selectedPolicy()});policyControls(true);status('Đang yêu cầu đổi chính sách...');
 }
-for(const id of ['mode','replyLanguage','correction','pace','remember'])$(id).addEventListener('change',changePolicy);
+for(const id of ['mode','replyLanguage','correction','pace','remember','humor','practice'])$(id).addEventListener('change',changePolicy);
 function encodePCM(samples) {
   const pcm = new Int16Array(samples.length);
   for (let i = 0; i < samples.length; i++) { const v = Math.max(-1, Math.min(1, samples[i])); pcm[i] = v < 0 ? v * 32768 : v * 32767; }
@@ -112,44 +115,74 @@ function encodePCM(samples) {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary);
 }
-async function startRecording() {
+function captureControls(){
+  $('talk').disabled=!connected || continuous;
+  $('listen').disabled=!connected;
+  $('listen').setAttribute('aria-pressed',String(continuous));
+  $('listen').textContent=continuous?'Tắt mic': 'Bật nghe liên tục';
+}
+function beginSpeech(){
+  speechActive=true;stopAudio();mutedUntilTurn=false;activeTranscript={};send({type:'start_turn'});
+  status('Listening · Đang nghe bạn');
+}
+function endSpeech(){
+  if(!speechActive)return;
+  speechActive=false;send({type:'turn_complete'});status('Thinking · Đang chờ');
+}
+async function startRecording(handsFree=false) {
   if (pendingPress || recording || !connected) return;
+  continuous=handsFree;captureControls();
   pendingPress = true; const generation = ++pressGeneration;
   let stream, ctx;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({audio: {deviceId: $('mic').value ? {exact:$('mic').value} : undefined, echoCancellation:true, noiseSuppression:true}});
+    stream = await navigator.mediaDevices.getUserMedia({audio: {deviceId: $('mic').value ? {exact:$('mic').value} : undefined, channelCount:1, echoCancellation:true, noiseSuppression:true, autoGainControl:true}});
     if (!pendingPress || generation !== pressGeneration || !connected) { stream.getTracks().forEach(t => t.stop()); return; }
     ctx = new AudioContext({sampleRate:16000}); await ctx.resume();
     await ctx.audioWorklet.addModule('/pcm-processor.js');
     if (!pendingPress || generation !== pressGeneration || !connected) { stream.getTracks().forEach(t=>t.stop()); await ctx.close(); return; }
-    stopAudio(); mutedUntilTurn = false; activeTranscript = {};
     const worklet = new AudioWorkletNode(ctx, 'pcm-capture-processor');
     const input = ctx.createMediaStreamSource(stream); micAnalyser = ctx.createAnalyser();
     input.connect(micAnalyser); input.connect(worklet);
     const silent = ctx.createGain(); silent.gain.value = 0; worklet.connect(silent); silent.connect(ctx.destination);
     capture = {stream, ctx, worklet}; recording = true;
+    for(const track of stream.getTracks())track.onended=()=>{stopRecording();status('Micro đã ngắt · bật lại khi sẵn sàng.');};
+    ctx.onstatechange=()=>{if(ctx.state==='suspended' && capture?.ctx===ctx){stopRecording();status('Micro tạm dừng · bật lại khi sẵn sàng.');}};
+    voiceGate=continuous?new LocalSpeechGate({sampleRate:ctx.sampleRate,threshold:Number($('sensitivity').value)}):null;
     ensureWave();
-    send({type:'start_turn'});
-    worklet.port.onmessage = event => { if (recording && generation === pressGeneration) send({type:'audio_chunk', data:encodePCM(event.data)}); };
-    $('talk').classList.add('recording'); $('micStatus').textContent = 'Micro đang bật'; status('Listening · Đang nghe');
+    if(!continuous)beginSpeech();
+    worklet.port.onmessage = event => {
+      if(!recording || generation!==pressGeneration)return;
+      if(!connected || socket?.bufferedAmount>524288){stopRecording();status('Micro đã tắt · kết nối chậm, chọn Retry.');return;}
+      if(!continuous){send({type:'audio_chunk',data:encodePCM(event.data)});return;}
+      const result=voiceGate.push(event.data,sources.size>0);
+      if(result.start)beginSpeech();
+      for(const samples of result.chunks)send({type:'audio_chunk',data:encodePCM(samples)});
+      if(result.end)endSpeech();
+      if(result.limit){stopRecording();status('Micro đã tắt sau lượt nói dài · bật lại để tiếp tục.');}
+    };
+    $('talk').classList.toggle('recording',!continuous); $('micStatus').textContent = continuous?'Micro đang bật · nghe liên tục':'Micro đang bật'; status('Listening · Đang nghe');
   } catch (err) {
     stream?.getTracks().forEach(t=>t.stop()); if (ctx && ctx.state !== 'closed') await ctx.close();
+    if(generation!==pressGeneration)return;
+    stopRecording();
     showError(new Error('Không mở được micro. Kiểm tra quyền micro trong Windows rồi thử lại.'));
   } finally { if (generation === pressGeneration) pendingPress = false; }
 }
 function stopRecording() {
   pendingPress = false; pressGeneration++;
-  if (recording) { recording = false; send({type:'turn_complete'}); status('Thinking · Đang chờ'); }
+  endSpeech();recording=false;continuous=false;voiceGate=null;
   if (capture) { capture.worklet.port.onmessage = null; capture.stream.getTracks().forEach(t=>t.stop()); capture.ctx.close().catch(()=>{}); capture = null; }
   micAnalyser = null; $('talk').classList.remove('recording'); $('micStatus').textContent = 'Micro đang tắt';
+  captureControls();
 }
 async function playAudio(encoded) {
+  const generation=playbackGeneration;
   if (!playback) {
     playback = new AudioContext({sampleRate:24000}); playbackBus = playback.createGain(); playbackAnalyser = playback.createAnalyser();
     playbackBus.connect(playbackAnalyser); playbackAnalyser.connect(playback.destination);
     if($('speaker').value){if(playback.setSinkId)await playback.setSinkId($('speaker').value);else status('WebView2 không hỗ trợ chọn loa riêng. Dùng cài đặt Windows.');}
   }
-  await playback.resume(); if (mutedUntilTurn || $('mute').checked) return;
+  await playback.resume(); if (generation!==playbackGeneration || speechActive || mutedUntilTurn || $('mute').checked) return;
   const bytes = Uint8Array.from(atob(encoded), c => c.charCodeAt(0)); const pcm = new Int16Array(bytes.buffer);
   const buffer = playback.createBuffer(1, pcm.length, 24000); const floats = buffer.getChannelData(0);
   for (let i = 0; i < pcm.length; i++) floats[i] = pcm[i] / 32768;
@@ -158,15 +191,17 @@ async function playAudio(encoded) {
   gain.gain.setValueAtTime(0,when); gain.gain.linearRampToValueAtTime(1,when+fade); gain.gain.setValueAtTime(1,when+buffer.duration-fade); gain.gain.linearRampToValueAtTime(0,when+buffer.duration);
   sources.add(source); source.onended = () => {sources.delete(source);source.disconnect();gain.disconnect();}; source.start(when); nextPlayback = when + buffer.duration; ensureWave(); status('Speaking · AI đang nói');
 }
-function stopAudio() { mutedUntilTurn = true; for (const source of sources) {try {source.stop();} catch {}} sources.clear(); nextPlayback = playback?.currentTime || 0; }
+function stopAudio() { playbackGeneration++;mutedUntilTurn = true; for (const source of sources) {try {source.stop();} catch {}} sources.clear(); nextPlayback = playback?.currentTime || 0; }
 function showError(err) { status('Error · ' + err.message); $('settingsError').textContent = err.message; }
 $('talk').addEventListener('pointerdown', e => {e.preventDefault(); $('talk').setPointerCapture(e.pointerId); startRecording();});
-for (const event of ['pointerup','pointercancel','lostpointercapture']) $('talk').addEventListener(event, stopRecording);
+for (const event of ['pointerup','pointercancel','lostpointercapture']) $('talk').addEventListener(event,()=>{if(!continuous)stopRecording();});
+$('listen').onclick=()=>{if(continuous || pendingPress)stopRecording();else{stopRecording();startRecording(true);}};
+$('sensitivity').onchange=()=>{if(voiceGate)voiceGate.threshold=Number($('sensitivity').value);};
 window.addEventListener('blur', stopRecording); window.addEventListener('beforeunload', disconnect);
-document.addEventListener('keydown', e => {if (e.code === 'Escape') stopAudio(); if (e.code === 'Space' && !e.repeat && (!$('settings').open && !$('memoryDialog').open) && (e.target===$('talk') || !['INPUT','TEXTAREA','SELECT','BUTTON'].includes(e.target.tagName))) {e.preventDefault();startRecording();}});
-document.addEventListener('keyup', e => {if (e.code === 'Space') stopRecording();});
+document.addEventListener('keydown', e => {if (e.code === 'Escape') {stopRecording();stopAudio();} if (e.code === 'Space' && !continuous && !e.repeat && (!$('settings').open && !$('memoryDialog').open) && (e.target===$('talk') || !['INPUT','TEXTAREA','SELECT','BUTTON'].includes(e.target.tagName))) {e.preventDefault();startRecording();}});
+document.addEventListener('keyup', e => {if (e.code === 'Space' && !continuous) stopRecording();});
 $('stopAudio').onclick = stopAudio; $('retry').onclick = connect;
-$('settingsButton').onclick = async () => {if(profileId){const p=await api(`/api/profiles/${profileId}`);$('nickname').value=p.name;$('apiKey').placeholder=p.has_api_key?'Đã lưu an toàn · để trống để giữ key':'Nhập Gemini API key';}$('settings').showModal();}; $('closeSettings').onclick = () => {$('apiKey').value='';$('settings').close();};
+$('settingsButton').onclick = async () => {stopRecording();if(profileId){const p=await api(`/api/profiles/${profileId}`);$('nickname').value=p.name;$('apiKey').placeholder=p.has_api_key?'Đã lưu an toàn · để trống để giữ key':'Nhập Gemini API key';}$('settings').showModal();}; $('closeSettings').onclick = () => {$('apiKey').value='';$('settings').close();};
 $('showTranscript').onchange = () => $('transcript').hidden = !$('showTranscript').checked;
 $('newConversation').onclick = () => newConversation().catch(showError);
 $('profile').onchange = async () => {disconnect();profileId=$('profile').value;localStorage.setItem('companionProfile',profileId);const data=await loadHistory();if(data.conversations.length)await chooseConversation(data.active_conversation_id || data.conversations[0].id);else await newConversation();};
@@ -195,7 +230,7 @@ async function showMemories(){
   for(const item of data.memories){const row=document.createElement('div');row.className='turn';const text=document.createElement('p');text.textContent=`${item.domain}: ${item.text}`;const edit=document.createElement('button');edit.textContent='Sửa';edit.onclick=()=>{editingMemoryId=item.id;$('memoryText').value=item.text;$('memoryDomain').value=item.domain;};const remove=document.createElement('button');remove.textContent='Xóa';remove.onclick=async()=>{disconnect();await api(`/api/profiles/${profileId}/memories/${item.id}`,'DELETE');await showMemories();};row.append(text,edit,remove);$('memoryList').append(row);}
   $('learningNotes').replaceChildren();if(conversationId){const notes=await api(`${basePath()}/${conversationId}/notes`);for(const item of notes.vocab_mistakes){const p=document.createElement('p');p.textContent=`${item.term}: ${item.note||''}`;$('learningNotes').append(p);}}
 }
-$('memoryButton').onclick=async()=>{if(!profileId)return;try{await showMemories();$('memoryDialog').showModal();}catch(err){showError(err);}};
+$('memoryButton').onclick=async()=>{stopRecording();if(!profileId)return;try{await showMemories();$('memoryDialog').showModal();}catch(err){showError(err);}};
 $('closeMemory').onclick=()=>$('memoryDialog').close();
 $('memoryForm').onsubmit=async e=>{e.preventDefault();if(!profileId)return;try{disconnect();await api(`/api/profiles/${profileId}/memories/${editingMemoryId||crypto.randomUUID()}`,'PUT',{domain:$('memoryDomain').value,text:$('memoryText').value});editingMemoryId=null;$('memoryText').value='';await showMemories();}catch(err){showError(err);}};
 const wave = $('wave').getContext('2d');let waveFrame=0;

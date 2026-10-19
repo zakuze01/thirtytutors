@@ -1,5 +1,11 @@
 # Companion Lite private QA preview
 
+Preview 3 (`1.2.1+companionlite.3`): optional cheeky humor and repeat-until-clear
+practice; explicit one-click continuous mic with local VAD and barge-in. Mic stays
+off at startup and is not rearmed automatically after reconnect/focus changes.
+No speaker-recognition model or ML installer is required. See
+docs/07_CONTINUOUS_VOICE_REPORT.md for mocked evidence and live limitations.
+
 Preview 2 (`1.2.1+companionlite.2`): Friend Mode now supports playful beginner
 Vietnamese–English scaffolding, short phrases, natural recasts and optional gentle
 humor. New defaults are balanced languages and beginner; existing saved preferences
