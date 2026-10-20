@@ -74,3 +74,11 @@ Verification before packaging:
 App version: `1.2.1+companionlite.11`; policy revision: 8. No paid cloud listening
 test, clean Windows 10/11 acceptance or public release is claimed. Windows build
 and in-place update evidence will be appended after verification.
+
+Follow-up verification: 13 personal-card checks also pass after explicit RAM
+card cleanup on close (4.15s). A further 48 card/Live checks pass (20.29s),
+including a new deterministic regression where the provider handshake crosses
+the card deadline. The deadline is captured before connection and closes stale
+context immediately afterwards. This avoids missing expiry when an entry is
+already expired by the time the network connection finishes. This follow-up
+supersedes the first build; only the subsequent clean-source rebuild is used.

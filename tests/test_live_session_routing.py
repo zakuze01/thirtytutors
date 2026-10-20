@@ -90,6 +90,33 @@ def test_live_card_expiry_closes_context_before_it_can_be_reused(ws_app, make_pr
     assert "Expiring synthetic goal" not in personal_memory.context(profile["id"])
 
 
+def test_live_card_expiring_during_connect_still_closes_stale_context(monkeypatch, ws_app, make_profile, make_conversation):
+    from thirtytutors import personal_memory
+
+    clock = [1000]
+    monkeypatch.setattr(personal_memory.time, "time", lambda: clock[0])
+    profile = make_profile(api_key="fake-key")
+    conv = make_conversation(profile["id"], memory_policy="allowed")
+    personal_memory.save(profile["id"], "needs", "Expires during handshake", 1001)
+    session = FakeLiveSession()
+    client = ws_app(session)
+
+    def connect(model, config):
+        assert "Expires during handshake" in str(config.system_instruction)
+        clock[0] = 1002
+        return FakeLiveConnectCM(session)
+
+    monkeypatch.setattr(
+        live_session, "get_client_for_key", lambda _: SimpleNamespace(aio=SimpleNamespace(live=SimpleNamespace(connect=connect)))
+    )
+    with client.websocket_connect("/ws/session") as ws:
+        ws.send_json({"type": "init", "profile_id": profile["id"], "conversation_id": conv["id"]})
+        assert ws.receive_json()["type"] == "session_status"
+        assert ws.receive_json()["type"] == "phase"
+        assert ws.receive()["type"] == "websocket.close"
+    assert "Expires during handshake" not in personal_memory.context(profile["id"])
+
+
 pytestmark = pytest.mark.integration
 
 

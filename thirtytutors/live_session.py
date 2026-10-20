@@ -754,11 +754,14 @@ def _refresh_conversation_memory_context(conv: dict, config_identity: dict) -> t
     if conv.get("resumption_handle") is not None:
         memory.clear_resumption(conv["id"])
         conv = memory.get_conversation(conv["id"])
-    summary = (
-        personal_memory.context(conv["profile_id"])
-        if ConversationPolicy.from_config(conv["config"]).memory_policy == "allowed"
-        else None
-    )
+    summary = None
+    conv["_card_expires_at"] = None
+    if ConversationPolicy.from_config(conv["config"]).memory_policy == "allowed":
+        # Capture the deadline BEFORE connecting. A slow provider handshake can
+        # cross it; checking only still-active entries after connect misses it.
+        deadlines = [i["expires_at"] for i in personal_memory.entries(conv["profile_id"], active_only=True) if i["expires_at"]]
+        conv["_card_expires_at"] = min(deadlines, default=None)
+        summary = personal_memory.context(conv["profile_id"])
     return conv, None, summary, [], []
 
 
@@ -1544,11 +1547,9 @@ async def ws_session(websocket: WebSocket):
 
                 async def expire_personal_card():
                     if ConversationPolicy.from_config(conv_config).memory_policy == "allowed":
-                        deadlines = [
-                            i["expires_at"] for i in personal_memory.entries(profile["id"], active_only=True) if i["expires_at"]
-                        ]
-                        if deadlines:
-                            await asyncio.sleep(max(0, min(deadlines) - time.time()))
+                        deadline = (conv or {}).get("_card_expires_at")
+                        if deadline is not None:
+                            await asyncio.sleep(max(0, deadline - time.time()))
                             await websocket.send_json(
                                 {"type": "phase", "message": "Hồ sơ tạm đã hết hạn; kết nối lại để bỏ ngữ cảnh cũ."}
                             )

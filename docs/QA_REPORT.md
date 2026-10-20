@@ -2,6 +2,14 @@
 
 **V1 acceptance is INCOMPLETE. Private local QA preview only.**
 
+Preview 11 replaces transcript reseeding with an encrypted six-category personal
+card and bounded socket-local working context. New transcripts are not saved or
+summarized; existing archives remain readable locally. 335 full regression
+checks and 20 Node microphone/VAD checks pass, followed by 48 targeted card/Live
+checks covering expiry during slow provider connection. Isolated browser QA
+passes card CRUD and continuous-mic preservation during planned context renewal.
+See `15_PERSONAL_CARD_REPORT.md` for scope, limits and build evidence.
+
 Preview 6 shortens default spoken replies and reduces local end-silence waiting
 from 800 to 600 ms with a slower-speaker option and local first-audio timing.
 298 Python and 10 Node tests pass; cloud latency and actual response length
