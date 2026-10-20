@@ -82,3 +82,21 @@ the card deadline. The deadline is captured before connection and closes stale
 context immediately afterwards. This avoids missing expiry when an entry is
 already expired by the time the network connection finishes. This follow-up
 supersedes the first build; only the subsequent clean-source rebuild is used.
+
+Windows evidence: final clean build source
+`c3a1de29a3e12b9d36bd6a7c06982f5a0ccf660a`. PyInstaller and NSIS exit 0.
+Frozen EXE loads the voice UI in 5.167 seconds with microphone off and exits 0.
+Installer: 60,804,686 bytes; SHA-256
+`98e4994446ba163dfd4ff3d854f44dd9afdf8f03ac3fafe38326592d0911d3fe`.
+Credential-pattern and forbidden-asset scans pass. Synthetic legacy-schema
+migration preserves archived turns/summary, creates an empty personal card and
+is safe to repeat. It never touches the owner's real profiles.
+
+The actual app was already closed. An encrypted rollback of its five current
+data files (129,162 bytes) was created outside Git before installation. The
+per-user update exits 0; every data file matches its pre-update hash. Installed
+EXE, five UI assets, offline speech engine, license and source archive match the
+tested build. The app remains closed for the user to open. On first launch, the
+card is initially empty: use **Hồ sơ cá nhân** to enter/confirm facts. Existing
+history is not auto-imported into it. No installer upload, PyPI publication or
+GitHub Release was performed. Actual cloud listening remains user acceptance.
