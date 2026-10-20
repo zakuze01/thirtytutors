@@ -68,3 +68,21 @@ App version `1.2.1+companionlite.12`, policy revision 9. Real token savings,
 cache-hit rates, humor and spoken response lengths remain to be measured using
 the user's live provider. No paid cloud evaluation or public release performed.
 Windows build, migration and in-place update evidence follows verification.
+
+Final Windows evidence: clean build source
+`2b30bb2c1bcc5569586415cb5ff36df326deaed9`. PyInstaller and NSIS exit 0;
+frozen UI loads in 4.894 seconds with microphone off and exits 0. Installer
+60,804,700 bytes; SHA-256
+`4c14a7526aeb1bf24a5686b78a0b14444c6cb6c9ca5ca34f70ea3df56cb5d9e7`.
+Credential-pattern/forbidden-asset scans pass. Synthetic old-schema migration
+preserves archived text/summary and the encrypted personal card, initializes
+empty token counters and is safe to repeat.
+
+Before update the actual app was closed and a DPAPI rollback of its five data
+files (129,162 bytes) was created outside Git. The per-user installation exits
+0, all five data files retain their exact hashes, and installed EXE/UI/offline
+speech engine/license/source archive match the tested build. The app remains
+closed for the user to open. Use **Token chat · Groq / DeepSeek** below transcript
+controls to view the latest API-reported usage and bounded local totals. No real
+cloud billing measurement, installer upload, PyPI publication or GitHub Release
+was performed.
