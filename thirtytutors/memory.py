@@ -54,6 +54,11 @@ def init_db() -> None:
         conn.executescript(
             """
             CREATE TABLE IF NOT EXISTS privacy_epochs (profile_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL DEFAULT 0);
+            CREATE TABLE IF NOT EXISTS token_usage (
+              id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, provider TEXT NOT NULL,
+              input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL,
+              cached_input_tokens INTEGER, reasoning_tokens INTEGER
+            );
             CREATE TABLE IF NOT EXISTS personal_card (
               profile_id TEXT NOT NULL, category TEXT NOT NULL, value BLOB NOT NULL,
               expires_at INTEGER, PRIMARY KEY(profile_id,category)

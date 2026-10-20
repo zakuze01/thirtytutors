@@ -8,6 +8,8 @@ import wave
 
 import httpx
 
+from . import token_usage
+
 PROVIDER_DEFAULTS = {
     "voice_provider": "gemini_live",
     "deepseek_model": "deepseek-flash",
@@ -130,6 +132,7 @@ class HybridProviders:
             raise ProviderError("Gemini: không đọc được transcript. Hãy nói lại.") from None
 
     async def reply(self, instruction, turns, request):
+        token_usage.begin()
         result = await self._request(
             DEEPSEEK_ENDPOINT,
             {
@@ -142,6 +145,7 @@ class HybridProviders:
                 "stream": False,
             },
         )
+        token_usage.record("deepseek", result.get("usage") if isinstance(result, dict) else None)
         try:
             choice = result["choices"][0]
             text = choice["message"]["content"]

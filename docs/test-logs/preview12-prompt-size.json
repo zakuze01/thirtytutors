@@ -1,0 +1,13 @@
+{
+  "friend": {
+    "before_characters": 7599,
+    "after_characters": 3772,
+    "character_reduction_percent": 50.36
+  },
+  "teacher": {
+    "before_characters": 4891,
+    "after_characters": 2882,
+    "character_reduction_percent": 41.08
+  },
+  "scope": "Policy instructions with default settings; characters only, not billed token or money savings."
+}

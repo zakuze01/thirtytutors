@@ -11,7 +11,7 @@ import contextlib
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from . import memory, personal_memory, scenarios
+from . import memory, personal_memory, scenarios, token_usage
 from .constants import DEFAULT_VOICE, VOICE_OPTIONS, get_api_voice_name
 from .conversation_policy import ConversationPolicy
 from .groq_provider import GroqProviders, QuotaError
@@ -85,6 +85,8 @@ class HybridSession:
         self.turns = self.turns[-personal_memory.RECENT_TURNS :]
 
     async def pipeline(self, generation, pcm=None, request=None):
+        token_usage.begin()
+        reply_requested = False
         try:
             async with asyncio.timeout(150):
                 await self.emit(
@@ -114,6 +116,7 @@ class HybridSession:
                 if pcm is not None:
                     self.append("user", request)
                 await self.emit(generation, "phase", message=self.reply_name + " đang trả lời…")
+                reply_requested = True
                 reply = await self.providers.reply(instruction, context, request)
                 if self.groq:
                     await self.emit(generation, "quota", stages=self.providers.quota)
@@ -141,6 +144,9 @@ class HybridSession:
                 )
         finally:
             if self.valid(generation):
+                usage = token_usage.latest()
+                if reply_requested and usage is not None:
+                    await self.emit(generation, "token_usage", usage=usage)
                 await self.emit(generation, "turn_complete")
 
     def launch(self, **kwargs):

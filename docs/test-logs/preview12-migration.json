@@ -1,0 +1,8 @@
+{
+  "legacy_schema_upgrade": true,
+  "repeat_migration_safe": true,
+  "archive_preserved": true,
+  "encrypted_card_preserved": true,
+  "token_counters_initially_empty": true,
+  "real_user_data_used": false
+}

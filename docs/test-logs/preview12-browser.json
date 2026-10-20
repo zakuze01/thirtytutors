@@ -1,0 +1,12 @@
+{
+  "environment": "isolated localhost, synthetic profile/counters, mocked cloud and microphone",
+  "usage_dialog_opens": true,
+  "rest_totals_match_numeric_fixtures": true,
+  "unknown_cache_distinct_from_zero": true,
+  "reported_zero_cache_displayed": true,
+  "clear_statistics_works": true,
+  "clear_preserves_personal_card": true,
+  "chat_only_scope_disclosed": true,
+  "physical_microphone_calls": 0,
+  "real_cloud_requests": 0
+}

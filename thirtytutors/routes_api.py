@@ -344,6 +344,21 @@ def list_profiles():
     return {"profiles": [{"id": p["id"], "name": p["name"]} for p in load_profiles()]}
 
 
+@router.get("/api/token-usage")
+def get_token_usage():
+    from . import token_usage
+
+    return token_usage.overview()
+
+
+@router.delete("/api/token-usage")
+def clear_token_usage():
+    from . import token_usage
+
+    token_usage.clear()
+    return {"cleared": True}
+
+
 @router.post("/api/profiles")
 async def create_profile(request: Request):
     payload = await request.json()

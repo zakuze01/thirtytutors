@@ -32,7 +32,9 @@ def build_system_instruction(
 ):
     policy = policy or ConversationPolicy(difficulty=difficulty)
     identity = json.dumps(
-        {"nickname": name, "native_language": native_language, "target_language": target_language}, ensure_ascii=False
+        {"nickname": name, "native_language": native_language, "target_language": target_language},
+        ensure_ascii=False,
+        separators=(",", ":"),
     )
     parts = ["# PERSONA\n", policy.instruction(), "\nProfile data: ", identity]
     if policy.mode == "teacher" and scenario_template:

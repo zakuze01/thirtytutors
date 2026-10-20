@@ -2,6 +2,14 @@
 
 **V1 acceptance is INCOMPLETE. Private local QA preview only.**
 
+Preview 12 consolidates prompts and shortens default reply guidance while keeping
+six-exchange RAM and the full confirmed personal card. Default Friend policy is
+50.36% shorter in characters; this is not measured token/billing savings.
+Anonymous numeric chat usage/cache counters are bounded to 500 API-reported
+records, inspectable/clearable locally, and never store conversation content.
+351 Python and 20 Node checks pass. See `16_TOKEN_ECONOMY_REPORT.md` for scope,
+limitations and Windows build/update evidence.
+
 Preview 11 replaces transcript reseeding with an encrypted six-category personal
 card and bounded socket-local working context. New transcripts are not saved or
 summarized; existing archives remain readable locally. 335 full regression

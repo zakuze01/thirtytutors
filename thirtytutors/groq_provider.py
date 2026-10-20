@@ -5,6 +5,7 @@ import json
 
 import httpx
 
+from . import token_usage
 from .local_tts import LocalSpeech, SpokenReply
 from .voice_providers import DEEPSEEK_ENDPOINT, ProviderError, provider_config, wav_input
 
@@ -89,6 +90,7 @@ class GroqProviders:
         return text.strip()
 
     async def reply(self, instruction, turns, request):
+        token_usage.begin()
         if not self.speech.available():
             raise ProviderError("Thiếu giọng offline. Cài lại Companion Lite trước khi gọi Groq.")
         deepseek = self.config["voice_provider"] == "deepseek_local"
@@ -114,6 +116,7 @@ class GroqProviders:
             payload.pop("reasoning_effort")
             payload.pop("max_completion_tokens")
         result = await self._request(DEEPSEEK_ENDPOINT if deepseek else CHAT_URL, "chat", json=payload)
+        token_usage.record("deepseek" if deepseek else "groq", result.get("usage") if isinstance(result, dict) else None)
         try:
             choice = result["choices"][0]
             if choice.get("finish_reason") != "stop":
