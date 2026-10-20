@@ -219,7 +219,7 @@ def session(make_profile, make_conversation, **config):
 
 
 @pytest.mark.asyncio
-async def test_voice_pipeline_persists_observed_turns_only(make_profile, make_conversation):
+async def test_voice_pipeline_keeps_observed_turns_only_in_ram(make_profile, make_conversation):
     s = session(make_profile, make_conversation)
     await s.handle({"type": "audio_chunk", "data": "invalid before start is discarded"})
     await s.handle({"type": "turn_complete"})
@@ -228,7 +228,8 @@ async def test_voice_pipeline_persists_observed_turns_only(make_profile, make_co
     await s.handle({"type": "audio_chunk", "data": base64.b64encode(b"\x01\x00" * 160).decode()})
     await s.handle({"type": "turn_complete"})
     await asyncio.gather(*s.tasks)
-    assert [t["text"] for t in memory.get_turns(s.conv["id"])] == ["con thích a cat", "Meow! A hungry cat!"]
+    assert not memory.get_turns(s.conv["id"])
+    assert [t["content"] for t in s.turns] == ["con thích a cat", "Meow! A hungry cat!"]
     assert len([m for m in s.socket.sent if m["type"] == "audio"]) == 3
     assert s.socket.sent[-1]["type"] == "turn_complete"
     assert not s.pcm
@@ -263,7 +264,8 @@ async def test_barge_in_rejects_late_results_even_if_transport_ignores_cancel(ma
     if stage == "transcribe":
         assert not memory.get_turns(s.conv["id"])
     elif stage == "reply":
-        assert len(memory.get_turns(s.conv["id"])) == 1
+        assert not memory.get_turns(s.conv["id"])
+        assert len(s.turns) == 1
     await s.close()
 
 
@@ -327,7 +329,8 @@ async def test_tts_failure_retains_text_without_fabricating_audio(make_profile, 
 
     s.providers.speak = fail
     await s.pipeline(s.generation, pcm=b"\x01\x00")
-    assert len(memory.get_turns(s.conv["id"])) == 2
+    assert not memory.get_turns(s.conv["id"])
+    assert len(s.turns) == 2
     assert any(m["type"] == "transcript_out" for m in s.socket.sent)
     assert not any(m["type"] == "audio" for m in s.socket.sent)
     assert s.socket.sent[-2]["type"] == "error"
@@ -412,4 +415,4 @@ def test_socket_protocol_greeting_review_and_close(make_profile, make_conversati
             assert any(e["type"] == "audio" for e in events)
             assert not any(e["type"] == "transcript_in" for e in events)
     assert not hybrid_session.ACTIVE_SOCKETS.get(p["id"])
-    assert all(t["role"] == "tutor" for t in memory.get_turns(c["id"]))
+    assert memory.get_turns(c["id"]) == []

@@ -9,11 +9,13 @@ let continuous = false, speechActive = false, voiceGate = null, playbackGenerati
 let playback = null, playbackBus = null, nextPlayback = 0, sources = new Set();
 let micAnalyser = null, playbackAnalyser = null, mutedUntilTurn = false;
 let activeTranscript = {}, reconnectDelay = 2000;
-let editingMemoryId = null;
+let pendingMemorySuggestion = null;
+const cardLabels={identity:"Tôi là ai",personality:"Tính cách tôi tự mô tả",needs:"Điều tôi đang cần",family:"Người thân",interests:"Sở thích",preferences:"Yêu cầu đặc biệt và cách giao tiếp"};
 let voiceProvider = 'gemini_live';
 let quotaBlocked=false;
 let quotaStage='';
 let responseStartedAt=0;
+let contextRefreshing=false;
 let lastMicMeter=0,micMeterEnergy=0,micMeterSamples=0;
 function updateMicMeter(samples){for(const value of samples)micMeterEnergy+=value*value;micMeterSamples+=samples.length;const now=performance.now();if(now-lastMicMeter<100)return;lastMicMeter=now;const rms=Math.sqrt(micMeterEnergy/Math.max(1,micMeterSamples));micMeterEnergy=0;micMeterSamples=0;$('micLevel').value=Math.min(1,rms/.1);const db=rms>0?Math.max(-96,Math.round(20*Math.log10(rms))): -96;$('micLevelText').textContent=`Mức mic: ${db} dBFS · ${speechActive?'Đang gửi lời nói':rms>=Number($('sensitivity').value)?'Có tín hiệu':'Chưa bắt tiếng · thử mức Nhạy nếu nói nhỏ'}`;}
 function selectedProvider(){return {voice_provider:$('voiceProvider').value,deepseek_model:$('deepseekModel').value,tts_model:$('ttsModel').value,transcription_model:'gemini-3.5-flash-lite',groq_model:$('groqModel').value,groq_transcription_model:$('groqTranscription').value};}
@@ -54,8 +56,9 @@ function addTranscript(role, text, streaming = false) {
     const label = document.createElement('strong'); label.textContent = role === 'user' ? 'Bạn' : 'AI';
     item = document.createElement('span'); row.append(label, item); $('transcript').append(row);
     if (streaming) activeTranscript[role] = item;
+    while($('transcript').children.length>12){const old=$('transcript').firstElementChild;for(const key of Object.keys(activeTranscript))if(old.contains(activeTranscript[key]))delete activeTranscript[key];old.remove();}
   }
-  item.textContent += text; item.scrollIntoView({block:'nearest'});
+  item.textContent = (item.textContent + text).slice(-4000); item.scrollIntoView({block:'nearest'});
 }
 async function loadHistory() {
   if (!profileId) return;
@@ -73,7 +76,7 @@ async function chooseConversation(id) {
   disconnect(); conversationId = id;
   const conv = await api(`${basePath()}/${encodeURIComponent(id)}`);
   $('transcript').replaceChildren(); activeTranscript = {};
-  for (const turn of conv.turns) addTranscript(turn.role, turn.text);
+  $('showArchive').hidden=!conv.turns.length;
   $('voice').value = conv.config.voice_name; $('model').value = conv.config.model_name;
   voiceProvider=conv.config.voice_provider || 'gemini_live';$('voiceProvider').value=voiceProvider;$('deepseekModel').value=conv.config.deepseek_model || 'deepseek-flash';$('ttsModel').value=conv.config.tts_model || 'gemini-3.8-flash-lite-tts';providerControls();
   $('groqModel').value=conv.config.groq_model || 'openai/gpt-oss-20b';$('groqTranscription').value=conv.config.groq_transcription_model || 'whisper-large-v3-turbo';
@@ -96,25 +99,33 @@ async function newConversation() {
   await loadHistory(); await chooseConversation(conv.id);
 }
 function disconnect() {
-  clearTimeout(retryTimer); connected = false; $('talk').disabled = true;
-  stopRecording(); stopAudio();
+  clearTimeout(retryTimer); connected = false;contextRefreshing=false; $('talk').disabled = true;
+  stopRecording(); stopAudio();pendingMemorySuggestion=null;$('memorySuggestion').hidden=true;
   if (socket) { socket.manual = true; socket.close(); socket = null; }
 }
 function connect() {
   if (!conversationId) return;
-  disconnect();quotaBlocked=false;quotaStage='';$('quotaPanel').hidden=!['groq_local','deepseek_local'].includes(voiceProvider);$('paidSwitch').hidden=true;$('quotaText').textContent='Groq: chưa có dữ liệu quota. Hạn mức theo tài khoản; app không xác minh được gói Free/trả phí.';status(voiceProvider==='deepseek_local'?'Đang chuẩn bị Groq nghe + DeepSeek trả lời + giọng offline':voiceProvider==='groq_local'?'Đang chuẩn bị Groq + giọng offline':voiceProvider==='deepseek_gemini'?'Đang chuẩn bị DeepSeek + Gemini':'Đang kết nối đến Gemini');
+  disconnect();$('transcript').replaceChildren();activeTranscript={};quotaBlocked=false;quotaStage='';$('quotaPanel').hidden=!['groq_local','deepseek_local'].includes(voiceProvider);$('paidSwitch').hidden=true;$('quotaText').textContent='Groq: chưa có dữ liệu quota. Hạn mức theo tài khoản; app không xác minh được gói Free/trả phí.';status(voiceProvider==='deepseek_local'?'Đang chuẩn bị Groq nghe + DeepSeek trả lời + giọng offline':voiceProvider==='groq_local'?'Đang chuẩn bị Groq + giọng offline':voiceProvider==='deepseek_gemini'?'Đang chuẩn bị DeepSeek + Gemini':'Đang kết nối đến Gemini');
   const route=voiceProvider==='gemini_live'?'session':'hybrid';
   const s = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/${route}`); socket = s;
   let turnError=false;
   s.onopen = () => s.send(JSON.stringify({type:'init', profile_id:profileId, conversation_id:conversationId}));
   s.onmessage = event => {
+    const candidate=JSON.parse(event.data);
+    if(candidate.type==='personal_memory_proposal'){
+      if(socket!==s)return;
+      pendingMemorySuggestion={text:String(candidate.text).slice(0,400),profile:profileId};$('memorySuggestion').hidden=false;return;
+    }
     if (s !== socket) return;
     const msg = JSON.parse(event.data);
     if (msg.type === 'session_status') {
-      if(recording || pendingPress)stopRecording();
+      if((recording || pendingPress) && !(contextRefreshing && continuous && recording && capture && !msg.unavailable))stopRecording();
+      if(contextRefreshing && continuous && recording && capture){speechActive=false;voiceGate=new LocalSpeechGate({sampleRate:capture.ctx.sampleRate,threshold:Number($('sensitivity').value),silenceMs:Number($('responsePace').value)});}
+      contextRefreshing=false;
       connected = !msg.unavailable; captureControls();
       if(msg.unavailable)s.manual=true;
       if (connected) { reconnectDelay = 2000; mutedUntilTurn=false; $('mode').value=msg.mode || 'friend'; policyControls(false); status('Listening · Sẵn sàng'); if(!$('transcript').childElementCount && !msg.resumed)send({type:'session_open'}); }
+    } else if (msg.type === 'context_refresh') {contextRefreshing=true;speechActive=false;status('Đang làm mới ngữ cảnh ngắn · chờ một chút rồi nói tiếp.');
     } else if (msg.type === 'policy_pending') { stopRecording(); connected=false; captureControls(); status('Reconnecting · Đang đổi chế độ');
     } else if (msg.type === 'audio') { if (!mutedUntilTurn && !speechActive) playAudio(msg.data).catch(showError); }
     else if (msg.type === 'interrupted') { stopAudio(); mutedUntilTurn = false; delete activeTranscript.model; }
@@ -137,7 +148,7 @@ function connect() {
     retryTimer = setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(30000, reconnectDelay * 2);
   };
 }
-function send(msg) { if (socket?.readyState === WebSocket.OPEN && connected) socket.send(JSON.stringify(msg)); }
+function send(msg) { if (socket?.readyState === WebSocket.OPEN && connected && !contextRefreshing) socket.send(JSON.stringify(msg)); }
 function selectedPolicy() { return {mode:$('mode').value,reply_language_preference:$('replyLanguage').value,correction_intensity:$('correction').value,difficulty:$('difficulty').value,speech_pace:$('pace').value,memory_policy:$('remember').checked?'allowed':'off',humor_style:$('humor').value,practice_style:$('practice').value}; }
 function policyControls(disabled){for(const id of ['mode','replyLanguage','correction','pace','remember','humor','practice'])$(id).disabled=disabled;}
 async function changePolicy() {
@@ -197,6 +208,7 @@ async function startRecording(handsFree=false) {
     worklet.port.onmessage = event => {
       if(!recording || generation!==pressGeneration)return;
       updateMicMeter(event.data);
+      if(contextRefreshing)return;
       if(!connected || socket?.bufferedAmount>524288){stopRecording();status('Micro đã tắt · kết nối chậm, chọn Retry.');return;}
       if(!continuous){send({type:'audio_chunk',data:encodePCM(event.data)});return;}
       const result=voiceGate.push(event.data,sources.size>0);
@@ -248,7 +260,7 @@ $('sensitivity').onchange=()=>{if(voiceGate)voiceGate.threshold=Number($('sensit
 $('responsePace').onchange=()=>{localStorage.setItem('companionResponsePause',$('responsePace').value);if(voiceGate)voiceGate.silenceMs=Number($('responsePace').value);};
 const savedResponsePace=localStorage.getItem('companionResponsePause');if(['600','800','1200'].includes(savedResponsePace))$('responsePace').value=savedResponsePace;
 window.addEventListener('blur',()=>stopRecording('Bạn vừa chuyển cửa sổ; bấm Bật nghe liên tục để nghe lại')); window.addEventListener('beforeunload', disconnect);
-document.addEventListener('keydown', e => {if (e.code === 'Escape') {stopRecording();stopAudio();} if (e.code === 'Space' && !continuous && !e.repeat && (!$('settings').open && !$('memoryDialog').open) && (e.target===$('talk') || !['INPUT','TEXTAREA','SELECT','BUTTON'].includes(e.target.tagName))) {e.preventDefault();startRecording();}});
+document.addEventListener('keydown', e => {if (e.code === 'Escape') {stopRecording();stopAudio();} if (e.code === 'Space' && !continuous && !e.repeat && (!$('settings').open && !$('memoryDialog').open && !$('archiveDialog').open) && (e.target===$('talk') || !['INPUT','TEXTAREA','SELECT','BUTTON'].includes(e.target.tagName))) {e.preventDefault();startRecording();}});
 document.addEventListener('keyup', e => {if (e.code === 'Space' && !continuous) stopRecording();});
 $('stopAudio').onclick = stopAudio; $('retry').onclick = connect;
 $('settingsButton').onclick = async () => {stopRecording();if(profileId){const p=await api(`/api/profiles/${profileId}`);$('nickname').value=p.name;$('apiKey').placeholder=p.has_api_key?'Đã lưu an toàn · để trống để giữ key':'Nhập Gemini API key';$('deepseekKey').placeholder=p.has_deepseek_api_key?'Đã lưu an toàn · để trống để giữ key':'Nhập DeepSeek API key';$('groqKey').placeholder=p.has_groq_api_key?'Đã lưu an toàn · để trống để giữ key':'Nhập Groq API key';}providerControls();$('settings').showModal();}; $('closeSettings').onclick = () => {$('apiKey').value='';$('deepseekKey').value='';$('groqKey').value='';$('settings').close();};
@@ -279,13 +291,24 @@ $('exportBackup').onclick=()=>{if(profileId){const a=document.createElement('a')
 $('importBackup').onchange=async()=>{const file=$('importBackup').files[0];if(!file)return;if(!confirm('Nhập backup local? Profile trùng ID sẽ được khôi phục từ backup; bản hiện tại được lưu recovery mã hóa.'))return;try{disconnect();const form=new FormData();form.append('file',file);const response=await fetch('/api/profiles/import',{method:'POST',body:form});if(!response.ok)throw new Error('Không nhập được backup. Kiểm tra định dạng hoặc kích thước.');const data=await response.json();localStorage.setItem('companionProfile',data.profile.id);location.reload();}catch(err){showError(err);}finally{$('importBackup').value='';}};
 $('eraseMemory').onclick=async()=>{if(!profileId||!confirm('Xóa TOÀN BỘ hội thoại, transcript, summary, từ mới và memory của profile này? Backup đã xuất là các bản riêng.'))return;try{disconnect();await api(`/api/profiles/${profileId}/memory`,'DELETE');conversationId='';$('transcript').replaceChildren();await loadHistory();status('Đã xóa memory · Micro đang tắt');}catch(err){showError(err);}};
 async function showMemories(){
-  const data=await api(`/api/profiles/${profileId}/memories`);$('memoryList').replaceChildren();
-  for(const item of data.memories){const row=document.createElement('div');row.className='turn';const text=document.createElement('p');text.textContent=`${item.domain}: ${item.text}`;const edit=document.createElement('button');edit.textContent='Sửa';edit.onclick=()=>{editingMemoryId=item.id;$('memoryText').value=item.text;$('memoryDomain').value=item.domain;};const remove=document.createElement('button');remove.textContent='Xóa';remove.onclick=async()=>{disconnect();await api(`/api/profiles/${profileId}/memories/${item.id}`,'DELETE');await showMemories();};row.append(text,edit,remove);$('memoryList').append(row);}
-  $('learningNotes').replaceChildren();if(conversationId){const notes=await api(`${basePath()}/${conversationId}/notes`);for(const item of notes.vocab_mistakes){const p=document.createElement('p');p.textContent=`${item.term}: ${item.note||''}`;$('learningNotes').append(p);}}
+  const target=profileId;
+  const data=await api(`/api/profiles/${target}/personal-card`);if(profileId!==target)return;
+  $('memoryList').replaceChildren();$('memoryDomain').replaceChildren();
+  for(const [key,label] of Object.entries(cardLabels))option($('memoryDomain'),key,label);
+  for(const item of data.entries){const row=document.createElement('div');row.className='turn';const text=document.createElement('p');text.textContent=`${cardLabels[item.category]}: ${item.text}${item.expired?' · Đã hết hạn':item.expires_at?' · Hết hạn '+new Date(item.expires_at*1000).toLocaleString():''}`;
+    const edit=document.createElement('button');edit.textContent='Sửa';edit.onclick=()=>{$('memoryText').value=item.text;$('memoryDomain').value=item.category;$('memoryExpiry').value=item.expires_at?'30':'0';};
+    const remove=document.createElement('button');remove.textContent='Quên mục này';remove.onclick=async()=>{try{disconnect();await api(`/api/profiles/${target}/personal-card/${item.category}`,'DELETE');await showMemories();}catch(err){showError(err);}};row.append(text,edit,remove);$('memoryList').append(row);}
+  const legacy=await api(`/api/profiles/${target}/memories`);$('legacyMemory').replaceChildren();for(const item of legacy.memories){const p=document.createElement('p');p.textContent=item.text;$('legacyMemory').append(p);}
+  $('learningNotes').replaceChildren();
 }
-$('memoryButton').onclick=async()=>{stopRecording();if(!profileId)return;try{await showMemories();$('memoryDialog').showModal();}catch(err){showError(err);}};
+$('showArchive').onclick=async()=>{stopRecording();try{const conv=await api(`${basePath()}/${encodeURIComponent(conversationId)}`);$('archiveText').replaceChildren();for(const turn of conv.turns){const p=document.createElement('p');p.textContent=`${turn.role==='user'?'Bạn':'AI'}: ${turn.text}`;$('archiveText').append(p);}$('archiveDialog').showModal();}catch(err){showError(err);}};
+$('closeArchive').onclick=()=>$('archiveDialog').close();
+$('memoryDomain').onchange=()=>{$('memoryExpiry').value=$('memoryDomain').value==='needs'?'30':'0';};
+$('memoryButton').onclick=async()=>{stopRecording();if(!profileId)return;try{await showMemories();$('memoryText').value='';$('memoryExpiry').value='0';$('memoryDialog').showModal();}catch(err){showError(err);}};
 $('closeMemory').onclick=()=>$('memoryDialog').close();
-$('memoryForm').onsubmit=async e=>{e.preventDefault();if(!profileId)return;try{disconnect();await api(`/api/profiles/${profileId}/memories/${editingMemoryId||crypto.randomUUID()}`,'PUT',{domain:$('memoryDomain').value,text:$('memoryText').value});editingMemoryId=null;$('memoryText').value='';await showMemories();}catch(err){showError(err);}};
+$('memoryForm').onsubmit=async e=>{e.preventDefault();if(!profileId)return;try{const days=Number($('memoryExpiry').value);const category=$('memoryDomain').value;const text=$('memoryText').value;disconnect();await api(`/api/profiles/${profileId}/personal-card/${category}`,'PUT',{text,expires_at:days?Math.floor(Date.now()/1000)+days*86400:null});$('memoryText').value='';await showMemories();status('Đã lưu hồ sơ. Bấm Kết nối rồi bật mic để trò chuyện tiếp.');}catch(err){showError(err);}};
+$('reviewMemorySuggestion').onclick=async()=>{const suggestion=pendingMemorySuggestion;if(!suggestion||suggestion.profile!==profileId)return;stopRecording();try{await showMemories();$('memoryText').value=suggestion.text;$('memoryExpiry').value='0';$('memoryDialog').showModal();$('memorySuggestion').hidden=true;pendingMemorySuggestion=null;}catch(err){showError(err);}};
+$('dismissMemorySuggestion').onclick=()=>{pendingMemorySuggestion=null;$('memorySuggestion').hidden=true;};
 const wave = $('wave').getContext('2d');let waveFrame=0;
 function ensureWave(){if(!waveFrame)waveFrame=requestAnimationFrame(drawWave);}
 function drawWave() {waveFrame=0;const a=matchMedia('(prefers-reduced-motion: reduce)').matches?null:(micAnalyser || (sources.size ? playbackAnalyser : null));wave.clearRect(0,0,640,100);wave.strokeStyle='#176679';wave.lineWidth=2;wave.beginPath();const values=new Uint8Array(a?.frequencyBinCount || 128);if(a)a.getByteTimeDomainData(values);else values.fill(128);for(let i=0;i<values.length;i++){const x=i/(values.length-1)*640,y=50+(values[i]-128)*.35;i?wave.lineTo(x,y):wave.moveTo(x,y);}wave.stroke();if(a)waveFrame=requestAnimationFrame(drawWave);}drawWave();

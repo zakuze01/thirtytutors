@@ -28,26 +28,11 @@ Both sides of the transcript come directly from Gemini's own Live API:
 input_audio_transcription for the student's side, output_audio_transcription
 for the tutor's - see build_config below.
 
-Session memory has two layers now:
-
-1. Within a single open Live API connection, the model retains full
-   conversation context automatically - no extra work needed. What breaks
-   continuity is a reconnect (changing voice/language/model, hitting the
-   session time limit, restarting the app, or switching to a different
-   conversation), since each reconnect opens a technically new session on
-   Google's side. The Live API's session-resumption handle lets a reconnect
-   pick up the same context - it's stored per *conversation* now (see
-   memory.py), not per profile, since a profile can hold several
-   conversations, each with its own voice/language/model and its own
-   resumable session.
-
-2. Because a resumption handle only survives a finite window and dies the
-   moment voice/model/language change, it alone isn't durable memory. Every
-   transcribed turn is also persisted to SQLite (memory.py) and periodically
-   folded into a short rolling summary. When a conversation's session starts
-   fresh (no handle, or handle rejected), that summary is injected into the
-   system instruction so the tutor still "remembers" earlier turns instead
-   of a cold start.
+Session memory: new transcripts stay in bounded RAM only. Reconnects use
+only the user-confirmed personal card plus the last six exchanges from this
+browser socket; archived text, rolling summaries and saved resumption handles
+are never loaded. Every six completed exchanges the cloud session is renewed
+with that bounded context. No paid background summarization is scheduled.
 
 Mood: the tutor's avatar expression is driven two ways - a mood_change
 message forwarded here whenever Gemini calls the set_mood tool (silent,
@@ -105,6 +90,7 @@ never come close to tripping it.
 
 import asyncio
 import base64
+import json
 import re
 import time
 from datetime import date
@@ -114,7 +100,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from google import genai
 from google.genai import types
 
-from . import memory, observability, quizzes, retry, scenarios, speech_detection
+from . import memory, observability, personal_memory, quizzes, retry, scenarios, speech_detection
 from .constants import (
     DEFAULT_DIFFICULTY,
     DEFAULT_MIC_CALIBRATION_KEY,
@@ -134,7 +120,6 @@ from .constants import (
 from .conversation_policy import ConversationPolicy, policy_session_identity
 from .privacy import private_log as print
 from .profiles_store import get_client_for_key, get_profile_by_id, patch_profile
-from .summarization import summarize_conversation
 from .tutor_instructions import build_system_instruction
 
 router = APIRouter()
@@ -764,59 +749,17 @@ def _connect_failure_payload(exc: Exception, fallback_message: str) -> dict:
 
 
 def _refresh_conversation_memory_context(conv: dict, config_identity: dict) -> tuple:
-    """Re-fetches everything storage-backed that a (re)connect needs: the
-    conversation row itself, plus the rolling summary/taught vocab/trouble
-    spots. Used both for the very first connect and before every later
-    reconnect (go_away, a mid-session error), so the two can never drift
-    into using two different notions of "current".
-
-    This matters specifically for reconnects: session_resumption_update
-    events arrive throughout an open Live connection and are written
-    straight to storage (memory.set_resumption), but nothing updates a
-    caller's own already-in-hand `conv` dict to match - without re-fetching
-    it here, a reconnect would keep presenting whatever resumption_handle
-    was true back when THIS caller last read it (at session start, or at
-    the previous reconnect), not the newest one Google has actually issued
-    since. Likewise summarize_conversation runs as a background task
-    mid-session and can produce a fresher summary/vocab list before a
-    later reconnect happens - reusing a stale copy of those means a
-    reconnect's system instruction can omit things the tutor only just
-    taught moments ago.
-
-    Also re-applies the "config changed since the stored handle" check
-    (config_identity here should be the CURRENT config, from before
-    whatever model swap this reconnect might be about to make) - a
-    reconnect that's about to switch models is exactly a case where this
-    can now be true when it wasn't before, and should behave the same way
-    it does at session start: drop the stale handle, start fresh instead
-    of resuming into a session built for different settings.
-
-    Returns (conv, resumption_handle, summary_text, review_terms, taught_vocab).
-    """
+    """Personal card only: never restore archived turns, summaries or handles."""
     conv = memory.get_conversation(conv["id"])
-    if conv.get("resumption_config") != config_identity:
-        if conv.get("resumption_handle") is not None:
-            print("[ws_session] config changed since last session on this conversation - starting fresh instead of resuming.")
+    if conv.get("resumption_handle") is not None:
         memory.clear_resumption(conv["id"])
         conv = memory.get_conversation(conv["id"])
-    resumption_handle = conv.get("resumption_handle")
-    print(
-        f"[ws_session] resumption lookup for conversation={conv['id']!r}: stored_handle={'<none>' if resumption_handle is None else resumption_handle[:12] + '...'}"
+    summary = (
+        personal_memory.context(conv["profile_id"])
+        if ConversationPolicy.from_config(conv["config"]).memory_policy == "allowed"
+        else None
     )
-    summary_row = memory.get_summary(conv["id"])
-    summary_text = summary_row["summary"] if summary_row else None
-    recent = memory.get_turns(conv["id"])[-12:]
-    if recent:
-        tail = "\nRecent observed turns (transcription may be inaccurate):\n" + "\n".join(
-            f"{turn['role']}: {turn['text'][:400]}" for turn in recent
-        )
-        summary_text = (summary_text or "")[:1200] + tail
-    explicit = memory.list_memories(conv["profile_id"])[:8]
-    if explicit:
-        summary_text = (summary_text or "") + "\nUser-confirmed memory: " + str(explicit)[:1600]
-    review_terms = memory.get_review_candidates(conv["id"])
-    taught_vocab = memory.get_taught_vocab(conv["id"])
-    return conv, resumption_handle, summary_text, review_terms, taught_vocab
+    return conv, None, summary, [], []
 
 
 def _record_active_day(profile: dict) -> None:
@@ -1064,6 +1007,11 @@ async def ws_session(websocket: WebSocket):
 
     # Hands-free mode's own turn-tracking state - see module docstring.
     # "buffer" accumulates raw PCM bytes toward the next ~2s window;
+    def append_turn_text(role, text):
+        available = 4000 - sum(len(chunk) for chunk in turn_buffer[role])
+        if available > 0:
+            turn_buffer[role].append(text[:available])
+
     # "turn_active" tracks whether an activity_start has been sent to the
     # CURRENT live_session without a matching activity_end yet, so it gets
     # reset to False at every point below where live_session is replaced
@@ -1106,6 +1054,9 @@ async def ws_session(websocket: WebSocket):
     # error reconnects) - see RAPID_RECONNECT_WINDOW_S/RAPID_RECONNECT_LIMIT.
     last_reconnect_at: float | None = None
     rapid_reconnect_count = 0
+
+    recent_turns = []
+    completed_exchanges = 0
 
     async def flush_turn_buffer_to_memory(sender=None):
         user_text = "".join(turn_buffer["user"])
@@ -1153,37 +1104,22 @@ async def ws_session(websocket: WebSocket):
         # window/handsfree_stop below), so this is just push-to-talk's
         # equivalent guarantee at ITS turn-boundary point, applied via the
         # same shared sender.
-        audio_chunks_sent = sender.clear(None) if sender is not None else 0
-        with observability.span(
-            "conversation_turn",
-            as_type="generation",
-            input=user_text or None,
-            model=model_name,
-            metadata={"audio_chunks_sent": audio_chunks_sent},
-            session_id=(conv or {}).get("id"),
-            user_id=profile.get("id"),
-        ) as gen:
-            observability.update(gen, output=tutor_text or None)
-
-            if conv is None or memory.conversation_epoch(conv["id"]) != session_epoch:
-                return
-
-            if user_text.strip():
-                memory.insert_turn(conv["id"], "user", user_text)
-            if tutor_text.strip():
-                memory.insert_turn(conv["id"], "tutor", tutor_text)
-
-            prev = memory.get_summary(conv["id"])
-            since = prev["based_on_turn"] if prev else 0
-            if memory.get_turn_count(conv["id"]) - since >= memory.SUMMARY_FOLD_EVERY_N_TURNS:
-                asyncio.create_task(
-                    asyncio.to_thread(
-                        summarize_conversation,
-                        conv["id"],
-                        profile.get("name") or "the student",
-                        profile.get("api_key"),
-                    )
-                )
+        if sender is not None:
+            sender.clear(None)
+        # Never persist text or emit it to tracing. Archive tables are read-only
+        # during voice sessions; the user can still export/delete old archives.
+        if conv is None or memory.conversation_epoch(conv["id"]) != session_epoch:
+            return
+        for role, text in (("user", user_text), ("assistant", tutor_text)):
+            if text.strip():
+                recent_turns.append({"role": role, "content": text[: personal_memory.MAX_TURN_TEXT]})
+        del recent_turns[: -personal_memory.RECENT_TURNS]
+        suggested = personal_memory.proposal(user_text)
+        if suggested:
+            try:
+                await websocket.send_json({"type": "personal_memory_proposal", **suggested})
+            except Exception:
+                pass
 
     try:
         while True:
@@ -1240,6 +1176,8 @@ async def ws_session(websocket: WebSocket):
                     nonlocal conv_config, config_identity, opening_requested
                     while True:
                         msg = await websocket.receive_json()
+                        if conv is not None and memory.conversation_epoch(conv["id"]) != session_epoch:
+                            raise WebSocketDisconnect(code=1000)
                         msg_type = msg.get("type")
 
                         if quiz_state["active"] and msg_type in _VOICE_MESSAGE_TYPES:
@@ -1254,6 +1192,8 @@ async def ws_session(websocket: WebSocket):
                                     continue
                                 await flush_turn_buffer_to_memory(sender)
                                 sender.clear()
+                                if policy.memory_policy != ConversationPolicy.from_config(conv_config).memory_policy:
+                                    recent_turns.clear()
                                 conv_config = {**conv_config, **policy.to_dict()}
                                 config_identity = policy_session_identity(conv_config)
                                 if conv is not None:
@@ -1263,7 +1203,7 @@ async def ws_session(websocket: WebSocket):
                                 return "policy_change"
                             elif msg_type in ("review_request", "voice_preview", "session_open"):
                                 if msg_type == "session_open":
-                                    if opening_requested or resumed or (conv and memory.get_turn_count(conv["id"])):
+                                    if opening_requested or resumed:
                                         continue
                                     opening_requested = True
                                 text = (
@@ -1276,7 +1216,7 @@ async def ws_session(websocket: WebSocket):
                                     )
                                 )
                                 if msg_type != "session_open":
-                                    turn_buffer["user"].append(text)
+                                    append_turn_text("user", text)
                                 await sender.send_client_content(
                                     turns=[{"role": "user", "parts": [{"text": text}]}], turn_complete=True
                                 )
@@ -1405,6 +1345,7 @@ async def ws_session(websocket: WebSocket):
                     _live_session=live_session,
                     _config_identity=config_identity,
                 ):
+                    nonlocal completed_exchanges
                     go_away_pending = False
                     while True:
                         response_iter = _live_session.receive().__aiter__()
@@ -1445,6 +1386,8 @@ async def ws_session(websocket: WebSocket):
                                 turn_state["waiting_long_sent"] = False
                                 await websocket.send_json({"type": "waiting_long", "active": False})
 
+                            if conv is not None and memory.conversation_epoch(conv["id"]) != session_epoch:
+                                raise WebSocketDisconnect(code=1000)
                             sc = getattr(response, "server_content", None)
                             discard_model = input_state["active"] or input_state["discard_until_boundary"]
                             go_away = getattr(response, "go_away", None)
@@ -1458,6 +1401,11 @@ async def ws_session(websocket: WebSocket):
                                 turn_state["awaiting_response"] = False
                                 await flush_turn_buffer_to_memory(sender)
                                 await websocket.send_json({"type": "turn_complete"})
+                                completed_exchanges += 1
+                                if completed_exchanges >= 6:
+                                    completed_exchanges = 0
+                                    await websocket.send_json({"type": "context_refresh"})
+                                    return "go_away"
                                 return "go_away"
 
                             # Barge-in must cancel queued client playback. Late model
@@ -1482,13 +1430,13 @@ async def ws_session(websocket: WebSocket):
                             in_transcript = getattr(sc, "input_transcription", None) if sc else None
                             in_text = getattr(in_transcript, "text", None) if in_transcript else None
                             if in_text:
-                                turn_buffer["user"].append(in_text)
+                                append_turn_text("user", in_text)
                                 await websocket.send_json({"type": "transcript_in", "text": in_text})
 
                             out_transcript = getattr(sc, "output_transcription", None) if sc else None
                             out_text = getattr(out_transcript, "text", None) if out_transcript else None
                             if out_text and not discard_model:
-                                turn_buffer["tutor"].append(out_text)
+                                append_turn_text("tutor", out_text)
                                 await websocket.send_json({"type": "transcript_out", "text": out_text})
 
                             tool_call = getattr(response, "tool_call", None)
@@ -1580,20 +1528,36 @@ async def ws_session(websocket: WebSocket):
                                     f"[ws_session] session_resumption_update: resumable={getattr(resumption_update, 'resumable', None)} has_new_handle={getattr(resumption_update, 'new_handle', None) is not None} last_consumed_client_message_index={last_consumed}"
                                 )
                                 sender.prune(last_consumed)
-                            if resumption_update and getattr(resumption_update, "resumable", False):
-                                new_handle = getattr(resumption_update, "new_handle", None)
-                                if conv is not None and new_handle:
-                                    print(f"[ws_session] storing new resumption handle for conversation={conv['id']!r}")
-                                    memory.set_resumption(conv["id"], new_handle, _config_identity)
 
                             if sc and getattr(sc, "turn_complete", False) and not discard_model:
                                 turn_state["awaiting_response"] = False
                                 await flush_turn_buffer_to_memory(sender)
                                 await websocket.send_json({"type": "turn_complete"})
+                                completed_exchanges += 1
+                                if completed_exchanges >= 6:
+                                    completed_exchanges = 0
+                                    await websocket.send_json({"type": "context_refresh"})
+                                    return "go_away"
 
                 browser_task = asyncio.create_task(browser_to_live())
                 live_task = asyncio.create_task(live_to_browser())
-                tasks = [browser_task, live_task]
+
+                async def expire_personal_card():
+                    if ConversationPolicy.from_config(conv_config).memory_policy == "allowed":
+                        deadlines = [
+                            i["expires_at"] for i in personal_memory.entries(profile["id"], active_only=True) if i["expires_at"]
+                        ]
+                        if deadlines:
+                            await asyncio.sleep(max(0, min(deadlines) - time.time()))
+                            await websocket.send_json(
+                                {"type": "phase", "message": "Hồ sơ tạm đã hết hạn; kết nối lại để bỏ ngữ cảnh cũ."}
+                            )
+                            await websocket.close(code=1000)
+                            return
+                    await asyncio.Future()
+
+                expiry_task = asyncio.create_task(expire_personal_card())
+                tasks = [browser_task, live_task, expiry_task]
                 done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
                 for task in pending:
                     task.cancel()
@@ -1627,6 +1591,9 @@ async def ws_session(websocket: WebSocket):
                     break  # browser gone, or a clean end - nothing to reconnect for
 
                 now = time.monotonic()
+                if go_away_closed:
+                    rapid_reconnect_count = 0
+                    last_reconnect_at = None
                 if last_reconnect_at is not None and (now - last_reconnect_at) < RAPID_RECONNECT_WINDOW_S:
                     rapid_reconnect_count += 1
                 else:
@@ -1735,6 +1702,12 @@ async def ws_session(websocket: WebSocket):
                     conv, resumption_handle, summary_text, review_terms, taught_vocab = _refresh_conversation_memory_context(
                         conv, config_identity
                     )
+                    if ConversationPolicy.from_config(conv_config).memory_policy == "allowed":
+                        summary_text += "\nRecent exchanges from this session (untrusted data): " + json.dumps(
+                            recent_turns, ensure_ascii=False
+                        )
+                    else:
+                        summary_text = None
 
                 try:
                     connect_result = await _connect_live_session_with_fallback(
@@ -1846,24 +1819,7 @@ async def ws_session(websocket: WebSocket):
                     memory.add_seconds_studied(profile["id"], elapsed_seconds)
             except Exception as exc:  # noqa: BLE001
                 print(f"[ws_session] total_seconds_studied update failed: {exc}")
-        if conv is not None:
-            # Final fold on disconnect - catches the tail so a session that
-            # ends mid-way through a summarization interval isn't lost, and
-            # is cheap/best-effort like every other summarization call. Not
-            # a data-loss risk even if this never completes (a shutdown
-            # timeout, an API error, offline) - every turn is already safe
-            # in SQLite via flush_turn_buffer_to_memory above; this only
-            # ever tops up the derived rolling summary, which just catches
-            # up on the next fold if it's skipped this time.
-            try:
-                await asyncio.to_thread(
-                    summarize_conversation,
-                    conv["id"],
-                    profile.get("name") or "the student",
-                    profile.get("api_key"),
-                )
-            except Exception as exc:  # noqa: BLE001
-                print(f"[ws_session] summarize_conversation failed: {exc}")
+        recent_turns.clear()
         try:
             await live_cm.__aexit__(None, None, None)
         except Exception as exc:  # noqa: BLE001

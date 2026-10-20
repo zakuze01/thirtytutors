@@ -11,7 +11,7 @@ import contextlib
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from . import memory, scenarios
+from . import memory, personal_memory, scenarios
 from .constants import DEFAULT_VOICE, VOICE_OPTIONS, get_api_voice_name
 from .conversation_policy import ConversationPolicy
 from .groq_provider import GroqProviders, QuotaError
@@ -35,11 +35,7 @@ class HybridSession:
         self.generation, self.tasks, self.closed = 0, set(), False
         self.active, self.pcm = False, bytearray()
         self.turns = []
-        if self.policy.memory_policy == "allowed":
-            self.turns = [
-                {"role": "user" if t["role"] == "user" else "assistant", "content": t["text"][:2000]}
-                for t in memory.get_turns(self.conv["id"])[-12:]
-            ]
+        self.card_context = None
 
     def valid(self, generation):
         return (
@@ -63,9 +59,10 @@ class HybridSession:
     def instruction(self):
         summary = None
         if self.policy.memory_policy == "allowed":
-            row = memory.get_summary(self.conv["id"])
-            summary = (row["summary"] if row else "")[:4000]
-            summary += "\nConfirmed memory (data): " + str(memory.list_memories(self.profile["id"])[:8])[:1600]
+            summary = personal_memory.context(self.profile["id"])
+            if self.card_context is not None and summary != self.card_context:
+                self.turns.clear()  # Expiry must also drop responses quoting the expired fact.
+            self.card_context = summary
         scenario = self.config.get("scenario", "free_learning")
         template = scenarios.SCENARIO_TEMPLATES.get(scenario) if scenario != "free_learning" else None
         return (
@@ -84,9 +81,8 @@ class HybridSession:
         )
 
     def append(self, role, text):
-        memory.insert_turn(self.conv["id"], "user" if role == "user" else "tutor", text)
-        self.turns.append({"role": role, "content": text})
-        self.turns = self.turns[-12:]
+        self.turns.append({"role": role, "content": str(text)[:personal_memory.MAX_TURN_TEXT]})
+        self.turns = self.turns[-personal_memory.RECENT_TURNS :]
 
     async def pipeline(self, generation, pcm=None, request=None):
         try:
@@ -106,10 +102,13 @@ class HybridSession:
                         await self.emit(generation, "error", message="Chưa nghe rõ lời nói. Bạn thử lại nhé.")
                         return
                     await self.emit(generation, "transcript_in", text=text)
+                    suggested = personal_memory.proposal(text)
+                    if suggested:
+                        await self.emit(generation, "personal_memory_proposal", **suggested)
                     request = text
-                context = list(self.turns)
                 instruction = self.instruction()
-                # Guard before persisting or sending context to a second provider.
+                context = list(self.turns)
+                # Guard before sending context to a second provider.
                 if not self.valid(generation):
                     return
                 if pcm is not None:
@@ -214,6 +213,7 @@ class HybridSession:
         self.cancel()
         self.pcm.clear()
         self.turns.clear()
+        self.card_context = None
         if self.tasks:
             await asyncio.wait(self.tasks, timeout=2)
         await self.providers.aclose()

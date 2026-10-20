@@ -6,7 +6,7 @@ from .friendly_slang import friend_style_instruction
 from .friendly_slang import instruction as slang_instruction
 
 # Bump whenever assembled behavior changes: provider resumption keeps old prompts.
-POLICY_REVISION = 7
+POLICY_REVISION = 8
 
 
 def policy_session_identity(config):

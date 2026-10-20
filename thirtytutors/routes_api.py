@@ -446,6 +446,46 @@ def get_memories(profile_id: str):
     return {"memories": memory.list_memories(profile_id)}
 
 
+@router.get("/api/profiles/{profile_id}/personal-card")
+def get_personal_card(profile_id: str):
+    from . import personal_memory
+
+    if get_profile_by_id(profile_id) is None:
+        raise HTTPException(404, "Profile not found")
+    return {"entries": personal_memory.entries(profile_id), "categories": personal_memory.CATEGORIES}
+
+
+@router.put("/api/profiles/{profile_id}/personal-card/{category}")
+async def save_personal_card(profile_id: str, category: str, request: Request):
+    from . import personal_memory
+
+    if get_profile_by_id(profile_id) is None:
+        raise HTTPException(404, "Profile not found")
+    payload = await request.json()
+    try:
+        if not isinstance(payload, dict):
+            raise ValueError("Invalid entry")
+        personal_memory.save(profile_id, category, payload.get("text"), payload.get("expires_at"))
+    except ValueError as exc:
+        raise HTTPException(400, "Invalid personal card entry") from exc
+    await close_profile_sessions(profile_id)
+    return {"saved": True}
+
+
+@router.delete("/api/profiles/{profile_id}/personal-card/{category}")
+async def remove_personal_card(profile_id: str, category: str):
+    from . import personal_memory
+
+    if get_profile_by_id(profile_id) is None:
+        raise HTTPException(404, "Profile not found")
+    try:
+        personal_memory.remove(profile_id, category)
+    except ValueError as exc:
+        raise HTTPException(400, "Invalid category") from exc
+    await close_profile_sessions(profile_id)
+    return {"deleted": True}
+
+
 @router.put("/api/profiles/{profile_id}/memories/{item_id}")
 async def save_profile_memory(profile_id: str, item_id: str, request: Request):
     if get_profile_by_id(profile_id) is None:

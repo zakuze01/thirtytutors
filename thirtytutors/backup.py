@@ -6,7 +6,7 @@ import re
 import zipfile
 from datetime import UTC, datetime
 
-from . import memory, profiles_store, secret_store
+from . import memory, personal_memory, profiles_store, secret_store
 from .constants import DATA_DIR
 from .profiles_store import delete_profile, get_profile_by_id, upsert_profile
 from .secret_store import SECRET_FIELDS, public_profile
@@ -24,6 +24,7 @@ def build_profile_backup_zip(profile_id):
         "profile": {**public_profile(profile), **memory.get_profile_state(profile_id)},
         "conversations": memory.export_profile_conversations(profile_id),
         "memories": memory.list_memories(profile_id),
+        "personal_card": personal_memory.entries(profile_id),
     }
     serialized = json.dumps(manifest, indent=2)
     for field in SECRET_FIELDS:
@@ -70,6 +71,15 @@ def _read_manifest(data):
             or len(item["text"]) > 2000
         ):
             raise ValueError("Invalid memory")
+    card = manifest.get("personal_card", [])
+    if not isinstance(card, list) or len(card) > len(personal_memory.CATEGORIES):
+        raise ValueError("Invalid personal card")
+    for item in card:
+        if not isinstance(item, dict):
+            raise ValueError("Invalid personal card")
+        personal_memory.validate(item.get("category"), item.get("text"), item.get("expires_at"))
+    if len({i["category"] for i in card}) != len(card):
+        raise ValueError("Duplicate personal card category")
     return manifest
 
 
@@ -81,12 +91,14 @@ def import_profile_backup_zip(data):
     old_state = memory.get_profile_state(pid)
     old_conversations = memory.export_profile_conversations(pid)
     old_memories = memory.list_memories(pid)
+    old_card = personal_memory.entries(pid)
     if old_profile:
         snapshot = {
             "format_version": 2,
             "profile": {**old_profile, **old_state},
             "conversations": old_conversations,
             "memories": old_memories,
+            "personal_card": old_card,
         }
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -110,12 +122,15 @@ def import_profile_backup_zip(data):
         for item in manifest.get("memories", []):
             memory.save_memory(pid, item["domain"], item["text"], item["id"])
         memory.import_profile_conversations(pid, manifest.get("conversations", []))
+        if "personal_card" in manifest:
+            personal_memory.replace(pid, manifest["personal_card"])
     except Exception:
         # Multi-store rollback: in-memory snapshot has no persisted plaintext key.
         memory.erase_profile_memory(pid)
         for item in old_memories:
             memory.save_memory(pid, item["domain"], item["text"], item["id"])
         memory.import_profile_conversations(pid, old_conversations)
+        personal_memory.replace(pid, old_card)
         if old_profile is not None:
             upsert_profile(old_profile)
             memory.set_profile_state(pid, old_state)

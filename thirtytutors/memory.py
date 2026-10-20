@@ -1,35 +1,10 @@
-"""
-SQLite-backed conversation memory and profile state.
+"""SQLite archives, profile state and the encrypted personal card.
 
-Two different stores hold profile-related data, split by how each piece
-changes over time rather than by what it's about:
-
-- `data/profiles.json` (profiles_store.py) holds identity and settings a
-  person edits deliberately and rarely through the UI - name, API key, mic
-  choice, backup preferences, and so on. profiles_store.py writes it
-  atomically (temp file + os.replace, with a rotating backup) - fine for
-  infrequent, deliberate writes.
-- This module (memory.db) holds everything else: the growing, append-heavy
-  conversation data (per-profile conversations, each one's
-  session-resumption state, its transcript turns, a rolling summary) AND,
-  via the `profile_state` table below, the small pieces of state the app
-  itself updates automatically and frequently in the background
-  (total_seconds_studied, last_active_date, current_streak,
-  seen_milestones, last_auto_backup_at). Those used to live in
-  profiles.json too, but being rewritten on nearly every session -
-  including right as the app is closing, see live_session.py's ws_session
-  `finally` block - made them the highest-risk fields for exactly the kind
-  of interrupted-write data loss that bit profiles.json before its writes
-  were made atomic. A killed process can lose at most SQLite's single
-  in-flight transaction, never corrupt the file as a whole the way a
-  truncate-then-write to a plain JSON file could.
-
-Transcripts are unbounded time-series that would force a full-file rewrite
-on every turn if kept in JSON; SQLite turns each turn into a cheap INSERT.
-
-No turns are ever capped or deleted by this module (aside from an explicit
-delete_conversation call) - summaries are a bounded *distillation* used to
-re-seed fresh sessions, not a replacement for the full history.
+New voice sessions keep transcripts only in RAM. The turn/summary tables and
+low-level import/export helpers remain for the user's existing archives;
+runtime voice relays must not call insert_turn or summarization. Personal
+card ciphertext is Windows-user-bound; portable exports include its readable
+contents only after the user explicitly exports a backup.
 """
 
 import json
@@ -79,6 +54,10 @@ def init_db() -> None:
         conn.executescript(
             """
             CREATE TABLE IF NOT EXISTS privacy_epochs (profile_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL DEFAULT 0);
+            CREATE TABLE IF NOT EXISTS personal_card (
+              profile_id TEXT NOT NULL, category TEXT NOT NULL, value BLOB NOT NULL,
+              expires_at INTEGER, PRIMARY KEY(profile_id,category)
+            );
             CREATE TABLE IF NOT EXISTS companion_memories (
               id TEXT PRIMARY KEY, profile_id TEXT NOT NULL, domain TEXT NOT NULL, text TEXT NOT NULL
             );
@@ -916,6 +895,7 @@ def erase_profile_memory(profile_id):
         delete_conversation(conv["id"])
     with _transaction() as conn:
         conn.execute("DELETE FROM companion_memories WHERE profile_id=?", (profile_id,))
+        conn.execute("DELETE FROM personal_card WHERE profile_id=?", (profile_id,))
 
 
 def remove_memory(profile_id, item_id):

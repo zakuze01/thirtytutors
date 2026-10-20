@@ -251,7 +251,8 @@ async def test_groq_pipeline_quota_event_preserves_text_and_stops_tts(make_profi
     provider = GroqProviders(KEY, c["config"], transport=httpx.MockTransport(handler), speech=speech)
     session = HybridSession(Socket(), p, c, provider)
     await session.pipeline(0, pcm=b"\x01\x00" * 160)
-    assert [t["text"] for t in memory.get_turns(c["id"])] == ["chào bạn"]
+    assert not memory.get_turns(c["id"])
+    assert [t["content"] for t in session.turns] == ["chào bạn"]
     assert any(m["type"] == "quota_exhausted" for m in sent)
     assert not speech.calls and not any(m["type"] == "audio" for m in sent)
     assert KEY not in json.dumps(sent)
@@ -297,7 +298,8 @@ async def test_groq_success_persists_plain_text_and_emits_local_audio(make_profi
     )
     session = HybridSession(Socket(), p, c, provider)
     await session.pipeline(0, request="Say hello")
-    assert [t["text"] for t in memory.get_turns(c["id"])] == ["Chuẩn rồi! Good job!"]
+    assert not memory.get_turns(c["id"])
+    assert [t["content"] for t in session.turns] == ["Chuẩn rồi! Good job!"]
     assert any(m["type"] == "audio" for m in sent)
     assert not any(m["type"] == "error" for m in sent)
     await session.close()

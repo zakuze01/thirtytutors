@@ -1,0 +1,17 @@
+{
+  "environment": "isolated localhost storage, mocked cloud and microphone",
+  "card_dialog_opens": true,
+  "six_categories": true,
+  "needs_default_thirty_days": true,
+  "card_save_edit_forget": true,
+  "proposal_review_before_save": true,
+  "card_survives_reload": true,
+  "new_transcript_not_stored": true,
+  "transcript_ui_max_rows": 12,
+  "archive_not_auto_restored": true,
+  "planned_live_renewal_keeps_existing_continuous_mic": true,
+  "renewal_does_not_request_another_microphone": true,
+  "audio_forwarding_paused_during_renewal": true,
+  "physical_microphone_used": false,
+  "real_cloud_requests": false
+}

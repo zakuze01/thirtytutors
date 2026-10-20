@@ -31,6 +31,65 @@ from fastapi.testclient import TestClient
 
 from thirtytutors import live_session, memory, quizzes
 
+
+def test_live_rotates_after_six_exchanges_with_only_recent_ram(monkeypatch, ws_app, make_profile, make_conversation):
+    from thirtytutors import personal_memory
+
+    profile = make_profile(api_key="fake-key")
+    conv = make_conversation(profile["id"], memory_policy="allowed")
+    personal_memory.save(profile["id"], "interests", "Toy rockets")
+    memory.insert_turn(conv["id"], "user", "DO NOT LOAD ARCHIVE")
+    responses = [
+        _response(
+            server_content=_server_content(input_text=f"recent user {i}", output_text=f"recent reply {i}", turn_complete=True)
+        )
+        for i in range(6)
+    ]
+    first, second = FakeLiveSession(responses), FakeLiveSession()
+    client = ws_app(first)
+    configs = []
+
+    def connect(model, config):
+        configs.append(config)
+        return FakeLiveConnectCM(first if len(configs) == 1 else second)
+
+    monkeypatch.setattr(
+        live_session, "get_client_for_key", lambda _: SimpleNamespace(aio=SimpleNamespace(live=SimpleNamespace(connect=connect)))
+    )
+    with client.websocket_connect("/ws/session") as ws:
+        ws.send_json({"type": "init", "profile_id": profile["id"], "conversation_id": conv["id"]})
+        assert ws.receive_json()["type"] == "session_status"
+        for _ in range(18):
+            assert ws.receive_json()["type"] in ("transcript_in", "transcript_out", "turn_complete")
+        assert ws.receive_json()["type"] == "context_refresh"
+        status = ws.receive_json()
+        assert status["type"] == "session_status" and status["resumed"] is False
+        ws.send_json({"type": "close"})
+    assert len(configs) == 2
+    prompt = str(configs[1].system_instruction)
+    assert "Toy rockets" in prompt and "recent user 5" in prompt
+    assert "DO NOT LOAD ARCHIVE" not in prompt
+    assert configs[1].session_resumption.handle is None
+    assert memory.get_turn_count(conv["id"]) == 1
+
+
+def test_live_card_expiry_closes_context_before_it_can_be_reused(ws_app, make_profile, make_conversation):
+    import time
+
+    from thirtytutors import personal_memory
+
+    profile = make_profile(api_key="fake-key")
+    conv = make_conversation(profile["id"], memory_policy="allowed")
+    personal_memory.save(profile["id"], "needs", "Expiring synthetic goal", int(time.time()) + 2)
+    client = ws_app(FakeLiveSession())
+    with client.websocket_connect("/ws/session") as ws:
+        ws.send_json({"type": "init", "profile_id": profile["id"], "conversation_id": conv["id"]})
+        assert ws.receive_json()["type"] == "session_status"
+        assert ws.receive_json()["type"] == "phase"
+        assert ws.receive()["type"] == "websocket.close"
+    assert "Expiring synthetic goal" not in personal_memory.context(profile["id"])
+
+
 pytestmark = pytest.mark.integration
 
 
@@ -155,7 +214,7 @@ def test_policy_switch_mid_response_preserves_turns_and_clears_old_session(monke
     assert len(configs) == 2
     assert "at most two high-impact errors" in str(configs[1].system_instruction)
     assert "Yesterday tôi đi gặp khách hàng" in str(configs[1].system_instruction)
-    assert len(memory.get_turns(conv["id"])) == 2
+    assert memory.get_turns(conv["id"]) == []
     assert memory.get_conversation(conv["id"])["config"]["mode"] == "teacher"
 
 
@@ -211,7 +270,7 @@ def test_barge_in_drops_stale_audio_and_keeps_interrupted_turn_separate(
         assert ws.receive_json()["type"] == "turn_complete"
         ws.send_json({"type": "close"})
     turns = memory.get_turns(conv["id"])
-    assert [t["text"] for t in turns] == ["Old reply", "I want water", "Here you go"]
+    assert turns == []  # New voice transcripts are RAM-only.
     assert sum("activity_start" in x for x in session.sent_realtime_inputs) == 1
     assert sum("activity_end" in x for x in session.sent_realtime_inputs) == 1
 
@@ -279,7 +338,12 @@ def ws_app(monkeypatch):
     live_session.py's `finally` block), and a real call would try to reach
     Gemini for real with whatever fake API key the test profile has.
     """
-    monkeypatch.setattr(live_session, "summarize_conversation", lambda *a, **k: None)
+    monkeypatch.setattr(
+        live_session,
+        "summarize_conversation",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("No transcript summarization allowed")),
+        raising=False,
+    )
 
     def _make(fake_session: FakeLiveSession):
         monkeypatch.setattr(live_session, "get_client_for_key", lambda api_key: FakeClient(fake_session))
@@ -290,7 +354,7 @@ def ws_app(monkeypatch):
     return _make
 
 
-def test_normal_turn_flow_routes_messages_and_persists_transcript(ws_app, make_profile, make_conversation):
+def test_normal_turn_flow_routes_messages_without_persisting_transcript(ws_app, make_profile, make_conversation):
     profile = make_profile(api_key="fake-key")
     conv = make_conversation(profile["id"], target_language="Spanish")
 
@@ -333,12 +397,7 @@ def test_normal_turn_flow_routes_messages_and_persists_transcript(ws_app, make_p
         ws.send_json({"type": "turn_complete"})
         ws.send_json({"type": "close"})
 
-    # The scripted transcript was flushed to memory on turn_complete:
-    turns = memory.get_turns(conv["id"])
-    assert [(t["role"], t["text"]) for t in turns] == [
-        ("user", "hola"),
-        ("tutor", "\u00a1hola! \u00bfc\u00f3mo est\u00e1s?"),
-    ]
+    assert memory.get_turns(conv["id"]) == []  # Transcript delivery must not write disk.
 
     # And the push-to-talk sequence sent exactly activity_start -> audio -> activity_end:
     kinds = [next(iter(call.keys())) for call in fake_session.sent_realtime_inputs]
@@ -372,7 +431,7 @@ def test_session_resumption_update_is_stored(ws_app, make_profile, make_conversa
         ws.send_json({"type": "close"})
 
     stored = memory.get_conversation(conv["id"])
-    assert stored["resumption_handle"] == "fake-handle-123"
+    assert stored["resumption_handle"] is None
 
 
 def test_non_resumable_update_is_not_stored(ws_app, make_profile, make_conversation):
@@ -403,7 +462,7 @@ def test_non_resumable_update_is_not_stored(ws_app, make_profile, make_conversat
     assert memory.get_conversation(conv["id"])["resumption_handle"] is None
 
 
-def test_reconnect_resumes_when_config_unchanged(ws_app, make_profile, make_conversation):
+def test_reconnect_discards_archived_handle_even_when_config_unchanged(ws_app, make_profile, make_conversation):
     profile = make_profile(api_key="fake-key")
     conv = make_conversation(profile["id"], target_language="Spanish")
     # Simulate a resumption handle stored by an earlier session with the
@@ -423,12 +482,12 @@ def test_reconnect_resumes_when_config_unchanged(ws_app, make_profile, make_conv
             }
         )
         status = ws.receive_json()
-        assert status["resumed"] is True
+        assert status["resumed"] is False
         ws.receive_json()
         ws.send_json({"type": "close"})
 
 
-def test_policy_upgrade_discards_old_prompt_session_but_keeps_observed_context(make_profile, make_conversation):
+def test_policy_upgrade_keeps_archive_without_loading_it(make_profile, make_conversation):
     profile = make_profile(api_key="fake-key")
     conv = make_conversation(profile["id"], reply_language_preference="balanced", difficulty="beginner")
     memory.insert_turn(conv["id"], "user", "Con mèo đói")
@@ -438,7 +497,7 @@ def test_policy_upgrade_discards_old_prompt_session_but_keeps_observed_context(m
     )
     assert handle is None
     assert refreshed["resumption_handle"] is None
-    assert "Con mèo đói" in summary
+    assert "Con mèo đói" not in summary
     assert refreshed["config"] == conv["config"]
     assert memory.get_turn_count(conv["id"]) == 1
 
@@ -870,7 +929,12 @@ def test_go_away_reconnects_without_closing_browser_socket(monkeypatch, make_pro
     session_status arrives - all on the SAME browser connection, with a
     second real connect() call underneath it.
     """
-    monkeypatch.setattr(live_session, "summarize_conversation", lambda *a, **k: None)
+    monkeypatch.setattr(
+        live_session,
+        "summarize_conversation",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("No transcript summarization allowed")),
+        raising=False,
+    )
     profile = make_profile(api_key="fake-key")
     conv = make_conversation(profile["id"], target_language="Spanish")
 
@@ -936,7 +1000,12 @@ def test_go_away_replay_excludes_audio_from_a_turn_that_already_completed(monkey
     BEFORE a go_away reconnect must NOT be replayed onto the new session -
     only audio from a turn still open when the connection died should be.
     """
-    monkeypatch.setattr(live_session, "summarize_conversation", lambda *a, **k: None)
+    monkeypatch.setattr(
+        live_session,
+        "summarize_conversation",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("No transcript summarization allowed")),
+        raising=False,
+    )
     profile = make_profile(api_key="fake-key")
     conv = make_conversation(profile["id"], target_language="Spanish")
 
@@ -1038,7 +1107,12 @@ def test_mid_response_drop_discards_buffered_audio_instead_of_replaying(monkeypa
     get flushed to memory, not silently carried forward into the next
     turn.
     """
-    monkeypatch.setattr(live_session, "summarize_conversation", lambda *a, **k: None)
+    monkeypatch.setattr(
+        live_session,
+        "summarize_conversation",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("No transcript summarization allowed")),
+        raising=False,
+    )
     profile = make_profile(api_key="fake-key")
     conv = make_conversation(profile["id"], target_language="Spanish")
 
@@ -1108,7 +1182,7 @@ def test_mid_response_drop_discards_buffered_audio_instead_of_replaying(monkeypa
     # And the partial tutor text that did stream in before the drop was
     # still saved, not silently discarded or carried into the next turn.
     turns = memory.get_turns(conv["id"])
-    assert ("tutor", "Partial answer before the drop") in [(t["role"], t["text"]) for t in turns]
+    assert turns == []  # The partial text is retained only in bounded reconnect RAM.
 
 
 def test_mid_response_drop_before_any_reply_still_replays_the_turn(monkeypatch, make_profile, make_conversation):
@@ -1122,7 +1196,12 @@ def test_mid_response_drop_before_any_reply_still_replays_the_turn(monkeypatch, 
     repeat themselves (exactly the reported symptom: said hello, got no
     response, had to say hello again).
     """
-    monkeypatch.setattr(live_session, "summarize_conversation", lambda *a, **k: None)
+    monkeypatch.setattr(
+        live_session,
+        "summarize_conversation",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("No transcript summarization allowed")),
+        raising=False,
+    )
     profile = make_profile(api_key="fake-key")
     conv = make_conversation(profile["id"], target_language="Spanish")
 

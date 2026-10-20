@@ -46,7 +46,7 @@ def build_system_instruction(
         )
     if policy.memory_policy == "allowed":
         if summary_text:
-            parts.append(MEMORY_CONTEXT_TEMPLATE.format(summary=summary_text[:6000]))
+            parts.append(MEMORY_CONTEXT_TEMPLATE.format(summary=summary_text[:10000]))
         if taught_vocab:
             parts.append(TAUGHT_VOCAB_CONTEXT_TEMPLATE.format(name=name, terms=", ".join(taught_vocab[:40])))
         if review_terms:
